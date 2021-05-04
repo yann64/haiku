@@ -1155,6 +1155,7 @@ _kern_unlock_node(int fd)
 
 // #pragma mark -
 
+#if !defined(HAIKU_HOST_PLATFORM_HAIKU)
 // read_pos
 ssize_t
 read_pos(int fd, off_t pos, void *buffer, size_t bufferSize)
@@ -1208,7 +1209,7 @@ write_pos(int fd, off_t pos, const void *buffer, size_t bufferSize)
 
 // readv_pos
 ssize_t
-readv_pos(int fd, off_t pos, const struct iovec *vec, size_t count)
+readv_pos(int fd, off_t pos, const struct iovec *vec, int count)
 {
 	// seek
 	off_t result = lseek(fd, pos, SEEK_SET);
@@ -1227,7 +1228,7 @@ readv_pos(int fd, off_t pos, const struct iovec *vec, size_t count)
 
 // writev_pos
 ssize_t
-writev_pos(int fd, off_t pos, const struct iovec *vec, size_t count)
+writev_pos(int fd, off_t pos, const struct iovec *vec, int count)
 {
 	// seek
 	off_t result = lseek(fd, pos, SEEK_SET);
@@ -1243,6 +1244,7 @@ writev_pos(int fd, off_t pos, const struct iovec *vec, size_t count)
 
 	return bytesWritten;
 }
+#endif
 
 
 // #pragma mark -

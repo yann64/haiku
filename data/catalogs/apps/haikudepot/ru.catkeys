@@ -1,4 +1,4 @@
-1	russian	x-vnd.Haiku-HaikuDepot	783803348
+1	russian	x-vnd.Haiku-HaikuDepot	840203303
 Repository update error	LocalRepositoryUpdateProcess		Ошибка обновления репозитория
 An error occurred while refreshing the repository: %error%	LocalRepositoryUpdateProcess		Произошла ошибка при обновлении репозитория: %error%
 User Created	UserLoginWindow		Пользователь создан
@@ -95,8 +95,8 @@ Close	RatePackageWindow		Закрыть
 Synchronizing package data for repository '%REPO_NAME%'	ServerPkgDataUpdateProcess		Синхронизация данных пакетов репозитория '%REPO_NAME%'
 View the usage conditions	UserLoginWindow		Показать условия использования
 Login issue	MainWindow		Проблема со входом в систему
-Size	PackageListView		Размер
 Your rating:	RatePackageWindow		Ваш рейтинг:
+Size	PackageListView		Размер
 The user %Nickname% has been successfully created in the HaikuDepotServer system. You can administer your user details by using the web interface. You are now logged-in as this new user.	UserLoginWindow		Пользователь %Nickname% был успешно создан в системе HaikuDepotServer. Вы можете управлять своими данными пользователя с помощью веб-интерфейса. Вы вошли в систему как новый пользователь.
 Your rating was updated.	RatePackageWindow		Ваш рейтинг был обновлен.
 All categories	FilterView		Все категории
@@ -107,7 +107,6 @@ View agreed usage conditions…	MainWindow		Показать согласова�
 Cancel	MainWindow		Отмена
 {0, plural,one{(1 more to download)}other{(# more to download)}}	WorkStatusView		{0, plural,one{( осталось скачать # пакет)}few{( осталось скачать # пакета)}other{( осталось скачать # пакетов)}}
 Refresh repositories	MainWindow		Обновить репозитории
-Tools	MainWindow		Инструменты
 Continue	App		Продолжить
 A password is required.	UserLoginWindow		Требуется пароль.
 This package doesn't seem to be on the HaikuDepot Server, so it's not possible to create a new rating or edit an existing rating.	MainWindow		Похоже, что этого пакета нет на сервере HaikuDepot из-за чего создать новый рейтинг или изменить существующий невозможно.
@@ -130,16 +129,16 @@ The nickname is required.	UserLoginWindow		Имя пользователя об�
 Source packages	MainWindow		Пакеты с исходным кодом
 -	no package size		-
 Problem with working files	App		Проблема с рабочими файлами
-Try again	App		Попробовать снова
 Rate package	RatePackageWindow		Оценить пакет
+Try again	App		Попробовать снова
 Unknown	PackageListView		Неизвестно
 I agree to the usage conditions	UserLoginWindow		Я согласен с условиями использования
 Log in	UserLoginWindow		Войти
 Logged in as %User%	MainWindow		Выполнен вход под пользователем %User%
 Email address:	UserLoginWindow		Email адрес:
 Screenshot	ScreenshotWindow		Снимок экрана
-HaikuDepot	System name		Склад
 A reboot is necessary to complete the installation process.	PackageManager		Для завершения установки требуется перезагрузка.
+HaikuDepot	System name		HaikuDepot
 {0, plural,one{I am at least one year old}other{I am # years of age or older}}	LocaleUtils		{0, plural, one{Мне по крайней мере # год} few{Мне по крайней мере # года или старше} other{Мне по крайней мере # лет или старше}}
 View latest usage conditions…	MainWindow		Показать последние условия использования…
 Quit	App		Выйти

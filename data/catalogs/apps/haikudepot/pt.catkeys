@@ -1,4 +1,4 @@
-1	portuguese	x-vnd.Haiku-HaikuDepot	2792101273
+1	portuguese	x-vnd.Haiku-HaikuDepot	2848501228
 Repository update error	LocalRepositoryUpdateProcess		Erro na atualização de repositório
 Network error	ServerHelper		Erro de rede
 An error occurred while refreshing the repository: %error%	LocalRepositoryUpdateProcess		Ocorreu um erro ao atualizar o repositório: %error%
@@ -99,8 +99,8 @@ An unexpected error has been sent from the server [%i]	ServerHelper		Foi enviado
 Synchronizing package data for repository '%REPO_NAME%'	ServerPkgDataUpdateProcess		A sincronizar dados dos pacotes para o repositório '%REPO_NAME%'
 View the usage conditions	UserLoginWindow		Ver as condições de utilização
 Login issue	MainWindow		Problema no início de sessão
-Size	PackageListView		Tamanho
 Your rating:	RatePackageWindow		Sua avaliação:
+Size	PackageListView		Tamanho
 The user %Nickname% has been successfully created in the HaikuDepotServer system. You can administer your user details by using the web interface. You are now logged-in as this new user.	UserLoginWindow		O utilizador %Nickname% foi criado com sucesso no sistema HaikuDepotServer. Pode gerir os seus detalhes de utilizador utilizando a interface web. Tem neste momento sessão iniciada com este utilizador.
 Your rating was updated.	RatePackageWindow		A sua avaliação foi atualizada.
 All categories	FilterView		Todas as categorias
@@ -111,7 +111,6 @@ View agreed usage conditions…	MainWindow		Ver condições de utilização acor
 Cancel	MainWindow		Cancelar
 {0, plural,one{(1 more to download)}other{(# more to download)}}	WorkStatusView		{0, plural,one{(1 mais para descarregar)}other{(# mais para descarregar)}}
 Refresh repositories	MainWindow		Atualizar repositórios
-Tools	MainWindow		Ferramentas
 Continue	App		Continuar
 A password is required.	UserLoginWindow		É necessária uma palavra-passe.
 This package doesn't seem to be on the HaikuDepot Server, so it's not possible to create a new rating or edit an existing rating.	MainWindow		Este pacote parece não estar localizado no servidor HaikuDepot, pelo que não é possível criar uma nova avaliação ou editar uma já existente.
@@ -136,16 +135,16 @@ Source packages	MainWindow		Pacotes de código-fonte
 -	no package size		-
 Problem with working files	App		Problema com ficheiros de trabalho
 Server error	ServerHelper		Erro do servidor
-Try again	App		Tentar novamente
 Rate package	RatePackageWindow		Avaliar pacote
+Try again	App		Tentar novamente
 Unknown	PackageListView		Desconhecido
 I agree to the usage conditions	UserLoginWindow		Eu concordo com as condições de utilização
 Log in	UserLoginWindow		Iniciar sessão
 Logged in as %User%	MainWindow		Sessão iniciada como %User%
 Email address:	UserLoginWindow		Endereço de email:
 Screenshot	ScreenshotWindow		Captura de ecrã
-HaikuDepot	System name		HaikuDepot
 A reboot is necessary to complete the installation process.	PackageManager		É necessário reiniciar para completar o processo de instalação.
+HaikuDepot	System name		HaikuDepot
 {0, plural,one{I am at least one year old}other{I am # years of age or older}}	LocaleUtils		{0, plural,one{Tenho pelo menos um ano de idade}other{Tenho # ou mais anos de idade}}
 View latest usage conditions…	MainWindow		Ver as condições de utilização mais recentes…
 Quit	App		Sair

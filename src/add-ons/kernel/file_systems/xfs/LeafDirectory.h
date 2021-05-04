@@ -11,23 +11,10 @@
 #include "system_dependencies.h"
 
 
-#define EXTENT_SIZE 16
-#define BLOCKNO_FROM_ADDRESS(n, volume) \
-	(n >> (volume->BlockLog() + volume->DirBlockLog()))
-#define BLOCKOFFSET_FROM_ADDRESS(n, inode) (n & (inode->DirBlockSize() - 1))
 #define HEADER_MAGIC 0x58443244
-#define LEAF_STARTOFFSET(n) 1UL << (35 - n)
+
 
 enum ContentType { DATA, LEAF };
-
-
-// xfs_da_blkinfo_t
-struct BlockInfo {
-			uint32				forw;
-			uint32				back;
-			uint16				magic;
-			uint16				pad;
-};
 
 
 //xfs_dir2_leaf_hdr_t

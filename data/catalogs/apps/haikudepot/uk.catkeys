@@ -1,4 +1,4 @@
-1	ukrainian	x-vnd.Haiku-HaikuDepot	412302812
+1	ukrainian	x-vnd.Haiku-HaikuDepot	3041521443
 Repository update error	LocalRepositoryUpdateProcess		Помилка оновлення репозитарія 
 Network error	ServerHelper		Помилка мережі
 An error occurred while refreshing the repository: %error%	LocalRepositoryUpdateProcess		Під час оновлення репозитарія сталася помилка: %error%
@@ -77,6 +77,7 @@ Send	RatePackageWindow		Надіслати
 Start package daemon	App		Запустити демон пакетів
 The password must be repeated in order to reduce the chance of entering the password incorrectly.	UserLoginWindow		Пароль потрібно повторити, щоб зменшити ймовірність неправильного введення пароля.
 The package action could not be scheduled: %Error%	PackageInfoView		Дію пакета неможливо спрогнозувати: %Error%
+Cancel	SettingsWindow		Скасувати
 Cancel	RatePackageWindow		Скасувати
 Inactive	PackageListView		Неактивний
 Nickname:	UserLoginWindow		Користувач:
@@ -88,6 +89,7 @@ Usage conditions download problem	UserLoginWindow		Помилка при зав�
 OK	PackageInfoView		ОК
 Downloading:	PackageInfoView		Завантаження:
 Success	UserLoginWindow		Успішно
+No	MainWindow		Ні
 Package daemon problem	App		Проблема демона пакета
 (%Votes%)	PackageInfoView		(%Votes%)
 Repository	PackageListView		Репозитарій
@@ -100,8 +102,8 @@ Synchronizing package data for repository '%REPO_NAME%'	ServerPkgDataUpdateProce
 An error has arisen downloading the usage conditions required to create a new user. Check the log for details and try again. \nInformation about how to view the logs is available in the HaikuDepot section of the Haiku User Guide.	UserLoginWindow		При завантаженні Умов використання, необхідних для створення нового користувача, виникла помилка. Ознайомтеся з даними журналу та повторіть спробу. \nІнформація про те, як переглядати журнали, доступна в розділі програми HaikuDepot посібника користувача Haiku.
 View the usage conditions	UserLoginWindow		Переглянути Умови користування
 Login issue	MainWindow		Проблема входу в систему
-Size	PackageListView		Розмір
 Your rating:	RatePackageWindow		Ваш рейтинг:
+Size	PackageListView		Розмір
 The user %Nickname% has been successfully created in the HaikuDepotServer system. You can administer your user details by using the web interface. You are now logged-in as this new user.	UserLoginWindow		Користувач %Nickname% був успішно створений в системі HaikuDepotServer. Ви можете адмініструвати дані цього користувача за допомогою веб-інтерфейсу. Зараз Ви увійшли в систему під його ім'ям, як новий користувач.
 Your rating was updated.	RatePackageWindow		Ваш рейтинг оновлений.
 All categories	FilterView		Всі категорії
@@ -113,7 +115,6 @@ View agreed usage conditions…	MainWindow		Погоджені Умови кор
 Cancel	MainWindow		Скасувати
 {0, plural,one{(1 more to download)}other{(# more to download)}}	WorkStatusView		{0, plural,one{(1 більше для завантаження)}other{(# більше для завантаження)}}
 Refresh repositories	MainWindow		Оновити репозитарії
-Tools	MainWindow		Інструменти
 Continue	App		Продовжити
 A password is required.	UserLoginWindow		Потрібен пароль.
 This package doesn't seem to be on the HaikuDepot Server, so it's not possible to create a new rating or edit an existing rating.	MainWindow		Цей пакет, здається, не знаходиться на HaikuDepot Server, тому неможливо створити нову оцінку або відредагувати існуючу.
@@ -138,16 +139,17 @@ Source packages	MainWindow		Пакети з вихідними текстами
 -	no package size		-
 Problem with working files	App		Проблеми з робочими файлами
 Server error	ServerHelper		Помилка серверу
-Try again	App		Спробувати знову
 Rate package	RatePackageWindow		Оцінка пакета
+Try again	App		Спробувати знову
 Unknown	PackageListView		Невідомо
 I agree to the usage conditions	UserLoginWindow		З Умовами користування погоджуюсь
 Log in	UserLoginWindow		Авторизуватись
 Logged in as %User%	MainWindow		Авторизований як %User%
 Email address:	UserLoginWindow		Адреса Email:
 Screenshot	ScreenshotWindow		Знімок екрана
-HaikuDepot	System name		HaikuDepot
 A reboot is necessary to complete the installation process.	PackageManager		Для завершення інсталяції потрібне перезавантаження.
+HaikuDepot	System name		HaikuDepot
+Yes	MainWindow		Так
 {0, plural,one{I am at least one year old}other{I am # years of age or older}}	LocaleUtils		{0, plural, one{Мені # рік або більше} few{Мені # роки або більше} other{Мені # років або більше}}
 View latest usage conditions…	MainWindow		Перегляд останніх Умов користування…
 Quit	App		Вийти

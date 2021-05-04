@@ -1,4 +1,4 @@
-1	turkish	x-vnd.Haiku-DriveSetup	1714372400
+1	turkish	x-vnd.Haiku-DriveSetup	4048496535
 Could not unmount partition %s.	MainWindow		%s bölümü bağlantısı kesilemedi.
 Mount all	MainWindow		Hepsini bağla
 Disk	MainWindow		Disk
@@ -51,6 +51,7 @@ Wipe (not implemented)	MainWindow		Sil (işlevsel değil)
 The currently selected partition does not have a parent partition.	MainWindow		Mevcut seçili disk bölümü ana bir disk bölümüne sahip değil.
 Validation of the given initialization parameters failed.	MainWindow		Verilen ilklendirme parametrelerinin doğrulanması başarısız oldu.
 Not formatted (%s)	PartitionList		Biçimlendirilmemiş (%s)
+Failed to create the partition. No changes have been written to disk.	MainWindow		Bölüm oluşturulamadı. Diske herhangi bir değişiklik yazılmadı.
 Shared	PartitionList		Paylaşılan
 MIMEs	PartitionList		MIME'ler
 BitLocker encrypted	Encryption utils		BitLocker şifreli
@@ -104,7 +105,6 @@ Are you sure you want to write the changes back to disk now?\n\nAll data on the 
 Select a partition from the list below.	DiskView		Aşağıdaki listeden bir bölüm seçin.
 Active	PartitionList		Etkin
 Are you sure you want to delete the selected partition?\n\nAll data on the partition will be irretrievably lost if you do so!	MainWindow		Seçili bölümü silmek istediğinizden emin misiniz?\n\nBölüm üzerindeki tüm veri geri getirilemeyecek bir biçimde kaybolacak!
-Failed to format the partition. No changes have been written to disk.	MainWindow		Bölüm biçimlendirilemedi. Değişiklikler diske yazılmadı.
 The partition %s has been successfully formatted.\n	MainWindow		%s bölümü başarıyla biçimlendirildi.\n
 The partition %s is already mounted.	MainWindow		%s bölümü zaten bağlı.
 Size	PartitionList		Boyut

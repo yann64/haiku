@@ -1,4 +1,4 @@
-1	romanian	x-vnd.Haiku-HaikuDepot	412302812
+1	romanian	x-vnd.Haiku-HaikuDepot	2940546158
 Repository update error	LocalRepositoryUpdateProcess		Eroare la actualizarea depozitului
 Network error	ServerHelper		Eroare de rețea
 An error occurred while refreshing the repository: %error%	LocalRepositoryUpdateProcess		A apărut o eroare în timpul reîmprospătării depozitului: %error%
@@ -24,6 +24,7 @@ Rating	PackageListView		Evaluare
 Synchronizing icons	ServerIconExportUpdateProcess		Se sincronizează iconițele
 Show	MainWindow		Arată
 An error occurred while obtaining the package list: %message%	LocalPkgDataLoadProcess		A apărut o eroare în timpul obținerii listei de pachete: %message%
+Settings…	MainWindow		Configurări…
 This application writes and reads some working files on your computer in order to function. It appears that there are problems writing a test file at [%TestFilePath%]. Check that there are no issues with your local disk or permissions that might prevent this application from writing files into that directory location. You may choose to acknowledge this problem and continue, but some functionality may be disabled.	App		Această aplicație scrie și citește unele fișiere care lucrează pe calculator pentru a funcționa. Se pare că există probleme la scrierea unui fișier test la [%TestFilePath%]. Verificați dacă nu sunt probleme cu discul local sau cu permisiunile care ar putea preveni acestei aplicații să scrie fișiere în locația aceea de director. Puteți alege să admiteți această problemă și să continuați, dar unele funcționalități pot fi dezactivate.
 Active	PackageListView		Activ
 Login or Create account	MainWindow		Autentificare sau Creare cont
@@ -61,6 +62,7 @@ Cancel	UserLoginWindow		Anulează
 HaikuDepot needs the package daemon to function, and it appears to be not running.\nWould you like to start it now?	App		HaikuDepot are nevoie de serviciul de pachete pentru a functiona și se pare că nu rulează.\nDoriți să-l porniți acum?
 Click a package to view information	PackageInfoView		Clic pe un pachet pentru a vizualiza informații
 The password must be at least eight characters long, consist of at least two digits and one upper case character.	UserLoginWindow		Parola trebuie să aibă lungimea de cel puțin opt caractere, să consiste din cel puțin două cifre și un caracter cu majusculă.
+Share anonymous usage data with HaikuDepotServer	SettingsWindow		Partajați date de utilizare anonime cu HaikuDepotServer
 Contents	PackageInfoView		Conținut
 Close	PackageManager		Închidere
 Changelog	PackageInfoView		Jurnal de modificări
@@ -77,6 +79,7 @@ Send	RatePackageWindow		Trimitere
 Start package daemon	App		Pornire demon de pachet
 The password must be repeated in order to reduce the chance of entering the password incorrectly.	UserLoginWindow		Parola trebuie să fie repetată pentru a reduce șansa de a introduce parola incorect.
 The package action could not be scheduled: %Error%	PackageInfoView		Actiunea pachetului n-a putut fi programată: %Error%
+Cancel	SettingsWindow		Anulează
 Cancel	RatePackageWindow		Anulează
 Inactive	PackageListView		Inactiv
 Nickname:	UserLoginWindow		Pseudonim:
@@ -87,7 +90,9 @@ OK	MainWindow		OK
 Usage conditions download problem	UserLoginWindow		Problemă de descărcare a condițiilor de utilizare
 OK	PackageInfoView		OK
 Downloading:	PackageInfoView		Se descarcă:
+Quit	MainWindow		Ieșire
 Success	UserLoginWindow		Succes
+No	MainWindow		Nu
 Package daemon problem	App		Problemă la serviciul pachetului
 (%Votes%)	PackageInfoView		(%Votes%)
 Repository	PackageListView		Depozit
@@ -97,11 +102,12 @@ Close	UserLoginWindow		Închidere
 Close	RatePackageWindow		Închidere
 An unexpected error has been sent from the server [%i]	ServerHelper		O eroare neașteptată a fost trimisă de la serverul [%i]
 Synchronizing package data for repository '%REPO_NAME%'	ServerPkgDataUpdateProcess		Se sincronizează datele pachetelor pentru depozitul „%REPO_NAME%”
+Settings	SettingsWindow		Configurări
 An error has arisen downloading the usage conditions required to create a new user. Check the log for details and try again. \nInformation about how to view the logs is available in the HaikuDepot section of the Haiku User Guide.	UserLoginWindow		A apărut o eroare în timpul descărcării condițiilor de utilizare necesare pentru a crea un utilizator nou. Verificați istoricul pentru detalii și încercați din nou. \nInformații despre cum se vizualizează înregistrările sunt disponibile în secțiunea HaikuDepot a Ghidului Utilizatorului Haiku.
 View the usage conditions	UserLoginWindow		Vizualizați condițiile de utilizare
 Login issue	MainWindow		Problemă de autentificare
-Size	PackageListView		Mărime
 Your rating:	RatePackageWindow		Evaluare:
+Size	PackageListView		Mărime
 The user %Nickname% has been successfully created in the HaikuDepotServer system. You can administer your user details by using the web interface. You are now logged-in as this new user.	UserLoginWindow		Utilizatorul %Nickname% a fost creat cu succes în sistemul HaikuDepotServer. Puteți administra detaliile utilizatorului utilizând interfața web. Acum sunteți autentificat ca acest utilizator nou.
 Your rating was updated.	RatePackageWindow		Evaluarea a fost actualizată.
 All categories	FilterView		Toate categoriile
@@ -113,10 +119,10 @@ View agreed usage conditions…	MainWindow		Vizualizați condițiile de utilizar
 Cancel	MainWindow		Anulează
 {0, plural,one{(1 more to download)}other{(# more to download)}}	WorkStatusView		{0, plural,one{(1 more to download)}other{(# more to download)}}
 Refresh repositories	MainWindow		Actualizare depozite
-Tools	MainWindow		Unelte
 Continue	App		Continuare
 A password is required.	UserLoginWindow		O parolă este necesară.
 This package doesn't seem to be on the HaikuDepot Server, so it's not possible to create a new rating or edit an existing rating.	MainWindow		Acest pachet nu pare a fi pe Server HaikuDepot, prin urmare nu este posibil să creați o evaluare nouă sau să editați o evaluare existentă.
+Apply	SettingsWindow		Aplică
 Language	RatePackageWindow		Limbă
 Log out	MainWindow		Ieșire
 Comment language:	RatePackageWindow		Limbă comentariu:
@@ -138,16 +144,18 @@ Source packages	MainWindow		Pachete sursă
 -	no package size		-
 Problem with working files	App		Problemă cu fișierele de lucru
 Server error	ServerHelper		Eroare de server
-Try again	App		Încearcă din nou
 Rate package	RatePackageWindow		Evaluați pachet
+Try again	App		Încearcă din nou
 Unknown	PackageListView		Necunoscut
 I agree to the usage conditions	UserLoginWindow		Sunt de acord cu condițiile de utilizare
 Log in	UserLoginWindow		Autentificare
+Sending anonymous usage data	MainWindow		Se trimit datele de utilizare anonime
 Logged in as %User%	MainWindow		Autentificat ca %User%
 Email address:	UserLoginWindow		Adresă email:
 Screenshot	ScreenshotWindow		Captură ecran
-HaikuDepot	System name		HaikuDepot
 A reboot is necessary to complete the installation process.	PackageManager		O repornire este necesară pentru a completa procesul de instalare.
+HaikuDepot	System name		HaikuDepot
+Yes	MainWindow		Da
 {0, plural,one{I am at least one year old}other{I am # years of age or older}}	LocaleUtils		{0, plural,one{I am at least one year old}other{I am # years of age or older}}
 View latest usage conditions…	MainWindow		Vizualizați ultimele condiții de utilizare…
 Quit	App		Ieșire

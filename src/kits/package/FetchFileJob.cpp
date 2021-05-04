@@ -102,17 +102,18 @@ FetchFileJob::Execute()
 	}
 
 	do {
-		BUrlRequest* request = BUrlProtocolRoster::MakeRequest(DownloadURL(),
-			this);
+		BUrlRequest* request = BUrlProtocolRoster::MakeRequest(fFileURL.String(),
+			&fTargetFile, this);
 		if (request == NULL)
 			return B_BAD_VALUE;
 
 		// Try to resume the download where we left off
 		off_t currentPosition;
-		BHttpRequest* http= dynamic_cast<BHttpRequest*>(request);
+		BHttpRequest* http = dynamic_cast<BHttpRequest*>(request);
 		if (http != NULL && fTargetFile.GetSize(&currentPosition) == B_OK
 			&& currentPosition > 0) {
 			http->SetRangeStart(currentPosition);
+			fTargetFile.Seek(0, SEEK_END);
 		}
 
 		thread_id thread = request->Run();
@@ -128,14 +129,6 @@ FetchFileJob::Execute()
 	}
 
 	return fError;
-}
-
-
-void
-FetchFileJob::DataReceived(BUrlRequest*, const char* data, off_t position,
-	ssize_t size)
-{
-	fTargetFile.WriteAt(position, data, size);
 }
 
 

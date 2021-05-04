@@ -1,4 +1,4 @@
-1	swedish	x-vnd.Haiku-HaikuDepot	412302812
+1	swedish	x-vnd.Haiku-HaikuDepot	3544756144
 Repository update error	LocalRepositoryUpdateProcess		Fel vid uppdatering av repositorie
 Network error	ServerHelper		Nätverksfel
 An error occurred while refreshing the repository: %error%	LocalRepositoryUpdateProcess		Ett fel inträffade vid uppdatering av repositoriet: %error%
@@ -24,6 +24,7 @@ Rating	PackageListView		Betyg
 Synchronizing icons	ServerIconExportUpdateProcess		Synkroniserar ikoner
 Show	MainWindow		Visa
 An error occurred while obtaining the package list: %message%	LocalPkgDataLoadProcess		Ett fel inträffade vid hämtning av paketlistan: %message%
+Settings…	MainWindow		Inställningar...
 This application writes and reads some working files on your computer in order to function. It appears that there are problems writing a test file at [%TestFilePath%]. Check that there are no issues with your local disk or permissions that might prevent this application from writing files into that directory location. You may choose to acknowledge this problem and continue, but some functionality may be disabled.	App		Denna applikation skriver och läser några arbetsfiler på din dator för att fungera. Det verkar som om det finns problem med att skriva en testfil på [%TestFilePath%]. Kontrollera att det inte finns några problem med din hårdisk eller behörigheter som kan förhindra programmet från att skriva filer till katalogplatsen. Du kan välja att bara notera detta problem och fortsätta, men vissa funktioner kan vara inaktiverade.
 Active	PackageListView		Aktiv
 Login or Create account	MainWindow		Logga in eller skapa konto
@@ -38,6 +39,7 @@ Local	LocalPkgDataLoadProcess		Lokal
 Rate %Package%	RatePackageWindow		Betyg %Package%
 An error occurred while initializing the package manager: %message%	LocalPkgDataLoadProcess		Ett fel inträffade vid initiering av pakethanteraren: %message%
 Quit HaikuDepot	App		Avsluta HaikuDepot
+Would it be acceptable to send anonymous usage data to the HaikuDepotServer system from this computer? You can change your preference in the \"Settings\" window later.	MainWindow		Skulle det vara acceptabelt att skicka anonyma användningsdata till HaikuDepotServer-systemet från den här datorn? Du kan ändra dina preferenser i fönstret \"Inställningar \" senare.
 An unexpected error '%Message%' has arisen with property '%Property%'	UserLoginWindow		Ett oväntat fel '%Message%' har uppstått med egenskapen '%Property%'
 A response to the captcha question must be provided.	UserLoginWindow		Ett svar på captcha-frågan måste tillhandahållas.
 Category	FilterView		Kategori
@@ -61,6 +63,7 @@ Cancel	UserLoginWindow		Avbryt
 HaikuDepot needs the package daemon to function, and it appears to be not running.\nWould you like to start it now?	App		Servicen behövs för HaikuDepot och den verkar inte köra.\nSkulle du vilja starta den nu?
 Click a package to view information	PackageInfoView		Klicka på ett paket för att se information
 The password must be at least eight characters long, consist of at least two digits and one upper case character.	UserLoginWindow		Lösenordet måste vara minst åtta tecken långt och innehålla minst två siffror och en versal.
+Share anonymous usage data with HaikuDepotServer	SettingsWindow		Dela anonym användningsinformation med HaikuDepotServer
 Contents	PackageInfoView		Innehåll
 Close	PackageManager		Stäng
 Changelog	PackageInfoView		Ändringslogg
@@ -77,6 +80,7 @@ Send	RatePackageWindow		Skicka
 Start package daemon	App		Starta paket-servicen
 The password must be repeated in order to reduce the chance of entering the password incorrectly.	UserLoginWindow		Lösenordet måste upprepas för att minska risken att det anges felaktigt.
 The package action could not be scheduled: %Error%	PackageInfoView		Paket körningen kunde inte planeras: %Error%
+Cancel	SettingsWindow		Avbryt
 Cancel	RatePackageWindow		Avbryt
 Inactive	PackageListView		Inaktiv
 Nickname:	UserLoginWindow		Användarnamn:
@@ -87,7 +91,9 @@ OK	MainWindow		OK
 Usage conditions download problem	UserLoginWindow		Fel vid hämtning av användarvillkor
 OK	PackageInfoView		OK
 Downloading:	PackageInfoView		Mestadels stabil
+Quit	MainWindow		Avsluta
 Success	UserLoginWindow		Klar
+No	MainWindow		Nej
 Package daemon problem	App		Problem med paketdemonen
 (%Votes%)	PackageInfoView		(%Votes%)
 Repository	PackageListView		Repositorie
@@ -97,11 +103,12 @@ Close	UserLoginWindow		Stäng
 Close	RatePackageWindow		Stäng
 An unexpected error has been sent from the server [%i]	ServerHelper		Ett oväntat fel har skickats från servern [%i]
 Synchronizing package data for repository '%REPO_NAME%'	ServerPkgDataUpdateProcess		Synkroniserar paketdata för repositoriet '%REPO_NAME%'
+Settings	SettingsWindow		Inställningar
 An error has arisen downloading the usage conditions required to create a new user. Check the log for details and try again. \nInformation about how to view the logs is available in the HaikuDepot section of the Haiku User Guide.	UserLoginWindow		Ett fel har uppstått vid nedladdning av de användningsvillkor som krävs för att skapa en ny användare. Kontrollera loggen för mer information och försök igen. \nInformation om hur du ser loggarna finns i avsnittet HaikuDepot i Haiku användarhandbok.
 View the usage conditions	UserLoginWindow		Visa användarvillkor
 Login issue	MainWindow		Inloggnings problem
-Size	PackageListView		Storlek
 Your rating:	RatePackageWindow		Dina betyg:
+Size	PackageListView		Storlek
 The user %Nickname% has been successfully created in the HaikuDepotServer system. You can administer your user details by using the web interface. You are now logged-in as this new user.	UserLoginWindow		Användaren %Nickname% har framgångsrikt skapats i HaikuDepotServer-systemet. Du kan administrera dina användarinformation genom att använda webbgränssnittet. Du är nu inloggad som den här nya användaren.
 Your rating was updated.	RatePackageWindow		Ditt betyg ändrades.
 All categories	FilterView		Alla kategorier
@@ -113,10 +120,10 @@ View agreed usage conditions…	MainWindow		Visa godkända användarvillkor…
 Cancel	MainWindow		Avbryt
 {0, plural,one{(1 more to download)}other{(# more to download)}}	WorkStatusView		{0, plural,one{(1 kvar att ladda hem)}other{(# kvar att ladda hem)}}
 Refresh repositories	MainWindow		Ladda om repositorier
-Tools	MainWindow		Verktyg
 Continue	App		Fortsätt
 A password is required.	UserLoginWindow		Ett lösenord krävs.
 This package doesn't seem to be on the HaikuDepot Server, so it's not possible to create a new rating or edit an existing rating.	MainWindow		Det här paketet verkar inte finnas på HaikuDepot-servern, så det är inte möjligt att skapa ett nytt betyg eller redigera ett befintligt betyg.
+Apply	SettingsWindow		Tillämpa
 Language	RatePackageWindow		Språk
 Log out	MainWindow		Logga ut
 Comment language:	RatePackageWindow		Kommentarspråk:
@@ -138,16 +145,18 @@ Source packages	MainWindow		Källkodspaket
 -	no package size		-
 Problem with working files	App		Problem med att arbeta filer
 Server error	ServerHelper		Serverfel
-Try again	App		Försök igen
 Rate package	RatePackageWindow		Betygsatt paket
+Try again	App		Försök igen
 Unknown	PackageListView		Okänd
 I agree to the usage conditions	UserLoginWindow		Jag godkänner användarvillkoren
 Log in	UserLoginWindow		Logga in
+Sending anonymous usage data	MainWindow		Skickar anonym användningsinformation
 Logged in as %User%	MainWindow		Inloggad som %User%
 Email address:	UserLoginWindow		E-postadress:
 Screenshot	ScreenshotWindow		Skärmdump
-HaikuDepot	System name		HaikuDepot
 A reboot is necessary to complete the installation process.	PackageManager		En omstart är nödvändig för att slutföra installationsprocessen.
+HaikuDepot	System name		HaikuDepot
+Yes	MainWindow		Ja
 {0, plural,one{I am at least one year old}other{I am # years of age or older}}	LocaleUtils		{0, plural,one{I am at least one year old}other{I am # years of age or older}}
 View latest usage conditions…	MainWindow		Se de senaste användarvillkoren…
 Quit	App		Avsluta

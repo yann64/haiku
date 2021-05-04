@@ -1,6 +1,6 @@
 /*
  * Copyright 2014, Stephan Aßmus <superstippi@gmx.de>.
- * Copyright 2016-2020, Andrew Lindesay <apl@lindesay.co.nz>.
+ * Copyright 2016-2021, Andrew Lindesay <apl@lindesay.co.nz>.
  * All rights reserved. Distributed under the terms of the MIT License.
  */
 
@@ -37,8 +37,6 @@ using namespace BPrivate::Network;
 class ProtocolListener : public BUrlProtocolListener {
 public:
 	ProtocolListener()
-		:
-		fDownloadIO(NULL)
 	{
 	}
 
@@ -58,15 +56,12 @@ public:
 	{
 	}
 
-	virtual void HeadersReceived(BUrlRequest* caller, const BUrlResult& result)
+	virtual void HeadersReceived(BUrlRequest* caller)
 	{
 	}
 
-	virtual void DataReceived(BUrlRequest* caller, const char* data,
-		off_t position, ssize_t size)
+	virtual void BytesWritten(BUrlRequest* caller, size_t bytesWritten)
 	{
-		if (fDownloadIO != NULL)
-			fDownloadIO->Write(data, size);
 	}
 
 	virtual	void DownloadProgress(BUrlRequest* caller, off_t bytesReceived,
@@ -88,23 +83,16 @@ public:
 	{
 		HDTRACE("jrpc: %s", text);
 	}
-
-	void SetDownloadIO(BDataIO* downloadIO)
-	{
-		fDownloadIO = downloadIO;
-	}
-
-private:
-	BDataIO*		fDownloadIO;
 };
 
 
 static BHttpRequest*
-make_http_request(const BUrl& url, BUrlProtocolListener* listener = NULL,
+make_http_request(const BUrl& url, BDataIO* output,
+	BUrlProtocolListener* listener = NULL,
 	BUrlContext* context = NULL)
 {
-	BUrlRequest* request = BUrlProtocolRoster::MakeRequest(url, listener,
-		context);
+	BUrlRequest* request = BUrlProtocolRoster::MakeRequest(url, output,
+		listener, context);
 	BHttpRequest* httpRequest = dynamic_cast<BHttpRequest*>(request);
 	if (httpRequest == NULL) {
 		delete request;
@@ -770,6 +758,61 @@ WebAppInterface::AuthenticateUser(const BString& nickName,
 }
 
 
+status_t
+WebAppInterface::IncrementViewCounter(const PackageInfoRef package,
+	const DepotInfoRef depot, BMessage& message)
+{
+	BMallocIO* requestEnvelopeData = new BMallocIO();
+		// BHttpRequest later takes ownership of this.
+	BJsonTextWriter requestEnvelopeWriter(requestEnvelopeData);
+
+	requestEnvelopeWriter.WriteObjectStart();
+	_WriteStandardJsonRpcEnvelopeValues(requestEnvelopeWriter,
+		"incrementViewCounter");
+	requestEnvelopeWriter.WriteObjectName("params");
+	requestEnvelopeWriter.WriteArrayStart();
+	requestEnvelopeWriter.WriteObjectStart();
+
+	requestEnvelopeWriter.WriteObjectName("architectureCode");
+	requestEnvelopeWriter.WriteString(package->Architecture());
+	requestEnvelopeWriter.WriteObjectName("repositoryCode");
+	requestEnvelopeWriter.WriteString(depot->WebAppRepositoryCode());
+	requestEnvelopeWriter.WriteObjectName("name");
+	requestEnvelopeWriter.WriteString(package->Name());
+
+	const BPackageVersion version = package->Version();
+	if (!version.Major().IsEmpty()) {
+		requestEnvelopeWriter.WriteObjectName("major");
+		requestEnvelopeWriter.WriteString(version.Major());
+	}
+	if (!version.Minor().IsEmpty()) {
+		requestEnvelopeWriter.WriteObjectName("minor");
+		requestEnvelopeWriter.WriteString(version.Minor());
+	}
+	if (!version.Micro().IsEmpty()) {
+		requestEnvelopeWriter.WriteObjectName("micro");
+		requestEnvelopeWriter.WriteString(version.Micro());
+	}
+	if (!version.PreRelease().IsEmpty()) {
+		requestEnvelopeWriter.WriteObjectName("preRelease");
+		requestEnvelopeWriter.WriteString(version.PreRelease());
+	}
+	if (version.Revision() != 0) {
+		requestEnvelopeWriter.WriteObjectName("revision");
+		requestEnvelopeWriter.WriteInteger(
+			static_cast<int64>(version.Revision()));
+	}
+
+	requestEnvelopeWriter.WriteObjectEnd();
+	requestEnvelopeWriter.WriteArrayEnd();
+	requestEnvelopeWriter.WriteObjectEnd();
+
+	return _SendJsonRequest("pkg", requestEnvelopeData,
+		_LengthAndSeekToZero(requestEnvelopeData), 0,
+		message);
+}
+
+
 /*!	JSON-RPC invocations return a response.  The response may be either
 	a result or it may be an error depending on the response structure.
 	If it is an error then there may be additional detail that is the
@@ -861,9 +904,10 @@ WebAppInterface::_SendJsonRequest(const char* domain,
 
 	BHttpHeaders headers;
 	headers.AddHeader("Content-Type", "application/json");
+	headers.AddHeader("Accept", "application/json");
 	ServerSettings::AugmentHeaders(headers);
 
-	BHttpRequest* request = make_http_request(url, &listener, &context);
+	BHttpRequest* request = make_http_request(url, NULL, &listener, &context);
 	ObjectDeleter<BHttpRequest> _(request);
 	if (request == NULL)
 		return B_ERROR;
@@ -883,7 +927,7 @@ WebAppInterface::_SendJsonRequest(const char* domain,
 	request->AdoptInputData(requestData, requestDataSize);
 
 	BMallocIO replyData;
-	listener.SetDownloadIO(&replyData);
+	request->SetOutput(&replyData);
 
 	thread_id thread = request->Run();
 	wait_for_thread(thread, NULL);
@@ -952,12 +996,11 @@ WebAppInterface::_SendRawGetRequest(const BString urlPathComponents,
 	BUrl url = ServerSettings::CreateFullUrl(urlPathComponents);
 
 	ProtocolListener listener;
-	listener.SetDownloadIO(stream);
 
 	BHttpHeaders headers;
 	ServerSettings::AugmentHeaders(headers);
 
-	BHttpRequest *request = make_http_request(url, &listener);
+	BHttpRequest *request = make_http_request(url, stream, &listener);
 	ObjectDeleter<BHttpRequest> _(request);
 	if (request == NULL)
 		return B_ERROR;

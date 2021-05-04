@@ -37,6 +37,13 @@ xfs_inode_t::SwapEndian()
 }
 
 
+uint8
+xfs_inode_t::ForkOffset() const
+{
+	return di_forkoff;
+}
+
+
 xfs_rfsblock_t
 xfs_inode_t::BlockCount() const
 {
@@ -175,6 +182,18 @@ Inode::HasFileTypeField() const
 
 
 status_t
+Inode::CheckPermissions(int accessMode) const
+{
+	// you never have write access to a read-only volume
+	if ((accessMode & W_OK) != 0 && fVolume->IsReadOnly())
+		return B_READ_ONLY_DEVICE;
+
+	return check_access_permissions(accessMode, Mode(),
+		(uint32)fNode->GroupId(), (uint32)fNode->UserId());
+}
+
+
+status_t
 Inode::GetFromDisk()
 {
 	xfs_agnumber_t agNo = INO_TO_AGNO(fId, fVolume);
@@ -213,6 +232,24 @@ Inode::GetFromDisk()
 	fNode->SwapEndian();
 
 	return B_OK;
+}
+
+
+uint64
+Inode::FileSystemBlockToAddr(uint64 block)
+{
+	xfs_agblock_t numberOfBlocksInAg = fVolume->AgBlocks();
+
+	uint64 agNo = FSBLOCKS_TO_AGNO(block, fVolume);
+	uint64 agBlockNo = FSBLOCKS_TO_AGBLOCKNO(block, fVolume);
+
+	xfs_fsblock_t actualBlockToRead =
+		FSBLOCKS_TO_BASICBLOCKS(fVolume->BlockLog(),
+			((uint64)(agNo * numberOfBlocksInAg) + agBlockNo));
+	TRACE("blockToRead:(%d)\n", actualBlockToRead);
+
+	uint64 readPos = actualBlockToRead * (BASICBLOCKSIZE);
+	return readPos;
 }
 
 

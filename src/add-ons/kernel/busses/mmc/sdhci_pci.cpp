@@ -35,7 +35,6 @@
 #define SDHCI_PCI_DEVICE_MODULE_NAME "busses/mmc/sdhci_pci/driver_v1"
 #define SDHCI_PCI_MMC_BUS_MODULE_NAME "busses/mmc/sdhci_pci/device/v1"
 
-#define SLOTS_COUNT				"device/slots_count"
 #define SLOT_NUMBER				"device/slot"
 #define BAR_INDEX				"device/bar"
 
@@ -663,13 +662,13 @@ init_bus(device_node* node, void** bus_cookie)
 	    sPCIx86Module = NULL;
 		ERROR("PCIx86Module not loaded\n");
 		// FIXME try probing FDT as well
-		return -1;
+		return B_NO_MEMORY;
 	}
 
 	uint8_t bar, slot;
 	if (gDeviceManager->get_attr_uint8(node, SLOT_NUMBER, &slot, false) < B_OK
 		|| gDeviceManager->get_attr_uint8(node, BAR_INDEX, &bar, false) < B_OK)
-		return -1;
+		return B_BAD_TYPE;
 
 	// Ignore invalid bars
 	TRACE("Register SD bus at slot %d, using bar %d\n", slot + 1, bar);
@@ -679,7 +678,7 @@ init_bus(device_node* node, void** bus_cookie)
 
 	if (pciInfo.u.h0.base_register_sizes[bar] == 0) {
 		ERROR("No registers to map\n");
-		return -1;
+		return B_IO_ERROR;
 	}
 
 	int msiCount = sPCIx86Module->get_msi_count(pciInfo.bus,
@@ -781,8 +780,6 @@ register_child_devices(void* cookie)
 	}
 
 	for (uint8_t slot = 0; slot <= slots_count; slot++) {
-
-		bar = bar + slot;
 		sprintf(prettyName, "SDHC bus %" B_PRIu8, slot);
 		device_attr attrs[] = {
 			// properties of this controller for mmc bus manager
@@ -803,7 +800,7 @@ register_child_devices(void* cookie)
 
 			// private data to identify device
 			{ SLOT_NUMBER, B_UINT8_TYPE, { ui8: slot} },
-			{ BAR_INDEX, B_UINT8_TYPE, { ui8: bar} },
+			{ BAR_INDEX, B_UINT8_TYPE, { ui8: bar + slot} },
 			{ NULL }
 		};
 		device_node* node;

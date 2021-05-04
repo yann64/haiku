@@ -75,6 +75,7 @@ void
 LeafDirectory::FillMapEntry(int num, ExtentMapEntry* fMap)
 {
 	void* directoryFork = DIR_DFORK_PTR(fInode->Buffer());
+
 	uint64* pointerToMap = (uint64*)((char*)directoryFork + num * EXTENT_SIZE);
 	uint64 firstHalf = pointerToMap[0];
 	uint64 secondHalf = pointerToMap[1];
@@ -99,9 +100,10 @@ LeafDirectory::FillBuffer(int type, char* blockBuffer, int howManyBlocksFurthur)
 	ExtentMapEntry* map;
 	if (type == DATA)
 		map = fDataMap;
-
-	if (type == LEAF)
+	else if (type == LEAF)
 		map = fLeafMap;
+	else
+		return B_BAD_VALUE;
 
 	if (map->br_state !=0)
 		return B_BAD_VALUE;
@@ -113,37 +115,17 @@ LeafDirectory::FillBuffer(int type, char* blockBuffer, int howManyBlocksFurthur)
 			return B_NO_MEMORY;
 	}
 
-	Volume* volume = fInode->GetVolume();
-	xfs_agblock_t numberOfBlocksInAg = volume->AgBlocks();
+	xfs_daddr_t readPos =
+		fInode->FileSystemBlockToAddr(map->br_startblock + howManyBlocksFurthur);
 
-	uint64 agNo =
-		FSBLOCKS_TO_AGNO(map->br_startblock + howManyBlocksFurthur, volume);
-	uint64 agBlockNo =
-		FSBLOCKS_TO_AGBLOCKNO(map->br_startblock + howManyBlocksFurthur, volume);
-
-	xfs_fsblock_t blockToRead = FSBLOCKS_TO_BASICBLOCKS(volume->BlockLog(),
-		(agNo * numberOfBlocksInAg + agBlockNo));
-
-	xfs_daddr_t readPos = blockToRead * BASICBLOCKSIZE;
-
-	TRACE("blockToRead: (%ld), readPos: (%ld)\n", blockToRead, readPos);
-	if (read_pos(volume->Device(), readPos, blockBuffer, len) != len) {
+	if (read_pos(fInode->GetVolume()->Device(), readPos, blockBuffer, len)
+		!= len) {
 		ERROR("Extent::FillBlockBuffer(): IO Error");
 		return B_IO_ERROR;
 	}
 
-	if (type == DATA)
-		fDataBuffer = blockBuffer;
-
-	if (type == LEAF)
-		fLeafBuffer = blockBuffer;
-
-	if (type == LEAF) {
-		ExtentLeafHeader* header = (ExtentLeafHeader*) fLeafBuffer;
-		TRACE("NumberOfEntries in leaf: (%d)\n",
-			B_BENDIAN_TO_HOST_INT16(header->count));
-	}
 	if (type == DATA) {
+		fDataBuffer = blockBuffer;
 		ExtentDataHeader* header = (ExtentDataHeader*) fDataBuffer;
 		if (B_BENDIAN_TO_HOST_INT32(header->magic) == HEADER_MAGIC)
 			TRACE("DATA BLOCK VALID\n");
@@ -151,6 +133,11 @@ LeafDirectory::FillBuffer(int type, char* blockBuffer, int howManyBlocksFurthur)
 			TRACE("DATA BLOCK INVALID\n");
 			return B_BAD_VALUE;
 		}
+	} else if (type == LEAF) {
+		fLeafBuffer = blockBuffer;
+		ExtentLeafHeader* header = (ExtentLeafHeader*) fLeafBuffer;
+		TRACE("NumberOfEntries in leaf: (%d)\n",
+			B_BENDIAN_TO_HOST_INT16(header->count));
 	}
 	return B_OK;
 }
@@ -281,7 +268,7 @@ LeafDirectory::GetNext(char* name, size_t* length, xfs_ino_t* ino)
 			continue;
 		}
 
-		if (dataEntry->namelen > *length)
+		if (dataEntry->namelen + 1 > *length)
 			return B_BUFFER_OVERFLOW;
 
 		fOffset = fOffset + EntrySize(dataEntry->namelen);

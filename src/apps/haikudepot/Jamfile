@@ -120,6 +120,7 @@ local applicationSources =
 	FeaturedPackagesView.cpp
 	FilterView.cpp
 	IconTarPtr.cpp
+	IncrementViewCounterProcess.cpp
 	JobStateListener.cpp
 	LanguageModel.cpp
 	LinkView.cpp
@@ -146,6 +147,7 @@ local applicationSources =
 	support.cpp
 	ScreenshotWindow.cpp
 	ScrollableGroupView.cpp
+	SettingsWindow.cpp
 	SharedBitmap.cpp
 	ToLatestUserUsageConditionsWindow.cpp
 	UserCredentials.cpp
@@ -188,7 +190,7 @@ local applicationSources =
 	LocaleUtils.cpp
 	RepositoryUrlUtils.cpp
 	StorageUtils.cpp
-	ToFileUrlProtocolListener.cpp
+	LoggingUrlProtocolListener.cpp
 
 	# package_daemon
 	ProblemWindow.cpp
@@ -268,6 +270,7 @@ DoCatalogs HaikuDepot :
 	ServerPkgDataUpdateProcess.cpp
 	ServerReferenceDataUpdateProcess.cpp
 	ServerRepositoryDataUpdateProcess.cpp
+	SettingsWindow.cpp
 	UserLoginWindow.cpp
 	WorkStatusView.cpp
 ;
