@@ -53,8 +53,8 @@ static EndpointManager* sEndpointManagers[AF_MAX];
 static rw_lock sEndpointManagersLock;
 
 
-// The TCP header length is at most 64 bytes.
-static const int kMaxOptionSize = 64 - sizeof(tcp_header);
+// The TCP header length is at most 60 bytes (0xf * 4).
+static const int kMaxOptionSize = 60 - sizeof(tcp_header);
 
 
 /*!	Returns an endpoint manager for the specified domain, if any.
@@ -139,10 +139,10 @@ add_options(tcp_segment_header &segment, uint8 *buffer, size_t bufferSize)
 		bump_option(option, length);
 	}
 
-	if (segment.sack_count > 0) {
+	if (segment.sackCount > 0) {
 		int sackCount = ((int)(bufferSize - length) - 4) / sizeof(tcp_sack);
-		if (sackCount > segment.sack_count)
-			sackCount = segment.sack_count;
+		if (sackCount > segment.sackCount)
+			sackCount = segment.sackCount;
 
 		if (sackCount > 0) {
 			option->kind = TCP_OPTION_NOP;
@@ -216,6 +216,19 @@ process_options(tcp_segment_header &segment, net_buffer *buffer, size_t size)
 			case TCP_OPTION_SACK_PERMITTED:
 				if (option->length == 2 && size >= 2)
 					segment.options |= TCP_SACK_PERMITTED;
+				break;
+			case TCP_OPTION_SACK:
+				if (size >= option->length) {
+					segment.options |= TCP_HAS_SACK;
+					segment.sackCount = min_c((option->length - 2)
+						/ sizeof(tcp_sack), MAX_SACK_BLKS);
+					for(int i = 0; i < segment.sackCount; ++i) {
+						segment.sacks[i].left_edge = ntohl(
+							option->sack[i].left_edge);
+						segment.sacks[i].right_edge = ntohl(
+							option->sack[i].right_edge);
+					}
+				}
 				break;
 		}
 
@@ -431,9 +444,9 @@ tcp_options_length(tcp_segment_header& segment)
 	if (segment.options & TCP_SACK_PERMITTED)
 		length += 2;
 
-	if (segment.sack_count > 0) {
+	if (segment.sackCount > 0) {
 		int sackCount = min_c((int)((kMaxOptionSize - length - 4)
-			/ sizeof(tcp_sack)), segment.sack_count);
+			/ sizeof(tcp_sack)), segment.sackCount);
 		if (sackCount > 0)
 			length += 4 + sackCount * sizeof(tcp_sack);
 	}

@@ -3,7 +3,7 @@ None	Icon-O-Matic-Properties		解除
 Rotate Path Indices	Icon-O-Matic-RotatePathIndiciesCmd		パスインデックスを回転
 Add empty	Icon-O-Matic-ShapesList		空のシェイプを追加
 Opening the icon failed!	Icon-O-Matic-Main		アイコンを開けません!
-Add with path	Icon-O-Matic-ShapesList		パスとともに追加
+Add with path	Icon-O-Matic-ShapesList		パス付きで追加
 Copy	Icon-O-Matic-Properties		コピー
 Color	Icon-O-Matic-PropertyNames		カラー
 Format	Icon-O-Matic-SavePanel		フォーマット
@@ -94,7 +94,7 @@ Add Style	Icon-O-Matic-AddStylesCmd		スタイルを追加
 Nudge Control Points	Icon-O-Matic-NudgePointsCommand		コントロールポイントを動かす
 Move Styles	Icon-O-Matic-MoveStylesCmd		スタイルを移動
 Don't save	Icon-O-Matic-Menu-Settings		保存しない
-Add shape with path	Icon-O-Matic-Menu-Shape		パスつきシェイプを追加
+Add shape with path	Icon-O-Matic-Menu-Shape		パス付きシェイプを追加
 Translation X	Icon-O-Matic-PropertyNames		X軸移動
 Flip Control Points	Icon-O-Matic-FlipPointsCmd		コントロールポイントを反転
 Add Transformers	Icon-O-Matic-AddTransformersCmd		Transformerを追加
@@ -185,7 +185,7 @@ Invert selection	Icon-O-Matic-Properties		選択範囲を反転
 Pick a color	Icon-O-Matic-ColorPicker		カラーを選択
 Multi Set 	Multi Set (property name)		複数セット
 Settings…	Icon-O-Matic-SavePanel		設定…
-Add with style	Icon-O-Matic-ShapesList		スタイルとともに追加
+Add with style	Icon-O-Matic-ShapesList		スタイル付きで追加
 New	Icon-O-Matic-Menu-File		新規
 Yes	Icon-O-Matic-StyledTextImport		はい
 Remove Path	Icon-O-Matic-RemovePathsCmd		パスを削除

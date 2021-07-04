@@ -21,6 +21,7 @@
 #include "accelerant_protos.h"
 #include "FlexibleDisplayInterface.h"
 #include "intel_extreme.h"
+#include "PanelFitter.h"
 
 #include <new>
 
@@ -133,7 +134,7 @@ Port::SetPipe(Pipe* pipe)
 	// FIXME is the use of PORT_TRANS_* constants correct for Sandy Bridge /
 	// Cougar Point? Or is it only for Ivy Bridge / Panther point onwards?
 	if (gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
-		portState &= PORT_TRANS_SEL_MASK;
+		portState &= ~PORT_TRANS_SEL_MASK;
 		if (pipe->Index() == INTEL_PIPE_A)
 			write32(portRegister, portState | PORT_TRANS_A_SEL_CPT);
 		else
@@ -144,7 +145,6 @@ Port::SetPipe(Pipe* pipe)
 		else
 			write32(portRegister, portState | DISPLAY_MONITOR_PIPE_B);
 	}
-
 	fPipe = pipe;
 
 	if (fPipe == NULL)
@@ -163,6 +163,11 @@ Port::SetPipe(Pipe* pipe)
 status_t
 Port::Power(bool enabled)
 {
+	if (fPipe == NULL) {
+		ERROR("%s: Setting power mode without assigned pipe!\n", __func__);
+		return B_ERROR;
+	}
+
 	fPipe->Enable(enabled);
 
 	return B_OK;
@@ -216,6 +221,46 @@ status_t
 Port::GetPLLLimits(pll_limits& limits)
 {
 	return B_ERROR;
+}
+
+
+pipe_index
+Port::PipePreference()
+{
+	CALLED();
+	// Ideally we could just return INTEL_PIPE_ANY for all devices by default, but
+	// this doesn't quite work yet. We need to use the BIOS presetup pipes for now.
+	if (gInfo->shared_info->device_type.Generation() < 4)
+		return INTEL_PIPE_ANY;
+
+	// Notes:
+	// - The BIOSes seen sofar do not use PIPE C by default.
+	// - The BIOSes seen sofar program transcoder A to PIPE A, etc.
+	// - Later devices add a pipe C alongside the added transcoder C.
+
+	// FIXME How's this setup in newer gens? Currently return INTEL_PIPE_ANY there..
+	if ((gInfo->shared_info->device_type.Generation() <= 7) &&
+		(!gInfo->shared_info->device_type.HasDDI())) {
+		uint32 portState = read32(_PortRegister());
+		if (gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
+			portState &= PORT_TRANS_SEL_MASK;
+			if (portState == PORT_TRANS_B_SEL_CPT)
+				return INTEL_PIPE_B;
+			else
+				return INTEL_PIPE_A;
+		} else {
+			if (portState & DISPLAY_MONITOR_PIPE_B)
+				return INTEL_PIPE_B;
+			else
+				return INTEL_PIPE_A;
+		}
+	}
+
+	if (gInfo->shared_info->device_type.HasDDI()) {
+		//fixme implement detection via PIPE_DDI_FUNC_CTL_x scan..
+	}
+
+	return INTEL_PIPE_ANY;
 }
 
 
@@ -306,6 +351,7 @@ AnalogPort::_PortRegister()
 status_t
 AnalogPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 {
+	CALLED();
 	TRACE("%s: %s %dx%d\n", __func__, PortName(), target->virtual_width,
 		target->virtual_height);
 
@@ -314,14 +360,13 @@ AnalogPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 		return B_ERROR;
 	}
 
-#if 0
-	// Disabled for now as our code doesn't work. Let's hope VESA/EFI has
-	// already set things up for us during boot.
-	// Train FDI if it exists
+	// Setup PanelFitter and Train FDI if it exists
+	PanelFitter* fitter = fPipe->PFT();
+	if (fitter != NULL)
+		fitter->Enable(*target);
 	FDILink* link = fPipe->FDI();
 	if (link != NULL)
 		link->Train(target);
-#endif
 
 	pll_divisors divisors;
 	compute_pll_divisors(target, &divisors, false);
@@ -374,6 +419,7 @@ LVDSPort::LVDSPort()
 pipe_index
 LVDSPort::PipePreference()
 {
+	CALLED();
 	// Older devices have hardcoded pipe/port mappings, so just use that
 	if (gInfo->shared_info->device_type.Generation() < 4)
 		return INTEL_PIPE_B;
@@ -381,22 +427,34 @@ LVDSPort::PipePreference()
 	// Ideally we could just return INTEL_PIPE_ANY for the newer devices, but
 	// this doesn't quite work yet.
 
-	// For Ibex Point and SandyBridge, read the existing LVDS configuration and
-	// just reuse that (it seems our attempt to change it doesn't work, anyway)
-	// On SandyBridge, there is a transcoder C that can't be used by the LVDS
-	// port (but A and B would be fine).
-	if (gInfo->shared_info->device_type.Generation() <= 6) {
+	// On SandyBridge and later, there is a transcoder C. On SandyBridge at least
+	// that can't be used by the LVDS port (but A and B would be fine).
+	// On Ibex Point, SandyBridge and IvyBridge (tested) changing pipes does not
+	// work yet.
+	// Notes:
+	// - Switching Pipes only works reliably when a 'full modeswitch' is executed
+	//   (FDI training) so we have to reuse the BIOS preset setup always for now.
+	// - The BIOSes seen sofar do not use PIPE C by default.
+	// - The BIOSes seen sofar program transcoder A to PIPE A, etc.
+	// - Later devices add a pipe C alongside the added transcoder C.
+
+	// FIXME How's this setup in newer gens? Currently return Pipe B fixed there..
+	if (gInfo->shared_info->device_type.Generation() <= 7) {
 		uint32 portState = read32(_PortRegister());
-		if (portState & DISPLAY_MONITOR_PIPE_B)
-			return INTEL_PIPE_B;
-		else
-			return INTEL_PIPE_A;
+		if (gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
+			portState &= PORT_TRANS_SEL_MASK;
+			if (portState == PORT_TRANS_B_SEL_CPT)
+				return INTEL_PIPE_B;
+			else
+				return INTEL_PIPE_A;
+		} else {
+			if (portState & DISPLAY_MONITOR_PIPE_B)
+				return INTEL_PIPE_B;
+			else
+				return INTEL_PIPE_A;
+		}
 	}
 
-	// For later generations, assume pipe B for now. Note that later devices
-	// add a pipe C (and a transcoder C), so we'd need to handle that and the
-	// port register has a different format because of it.
-	// (using PORT_TRANS_*_SEL_CPT to select which transcoder to use)
 	return INTEL_PIPE_B;
 }
 
@@ -500,15 +558,6 @@ LVDSPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 		}
 	}
 
-#if 0
-	// Disabled for now as our code doesn't work. Let's hope VESA/EFI has
-	// already set things up for us during boot.
-	// Train FDI if it exists
-	FDILink* link = fPipe->FDI();
-	if (link != NULL)
-		link->Train(target);
-#endif
-
 	// For LVDS panels, we may need to set the timings according to the panel
 	// native video mode, and let the panel fitter do the scaling. But the
 	// place where the scaling happens varies accross generations of devices.
@@ -547,6 +596,14 @@ LVDSPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 		hardwareTarget = *target;
 	}
 
+	// Setup PanelFitter and Train FDI if it exists
+	PanelFitter* fitter = fPipe->PFT();
+	if (fitter != NULL)
+		fitter->Enable(hardwareTarget);
+	FDILink* link = fPipe->FDI();
+	if (link != NULL)
+		link->Train(&hardwareTarget);
+
 	pll_divisors divisors;
 	compute_pll_divisors(&hardwareTarget, &divisors, true);
 
@@ -562,7 +619,7 @@ LVDSPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 
 	// LVDS on PCH needs set before display enable
 	if (gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
-		lvds &= PORT_TRANS_SEL_MASK;
+		lvds &= ~PORT_TRANS_SEL_MASK;
 		if (fPipe->Index() == INTEL_PIPE_A)
 			lvds |= PORT_TRANS_A_SEL_CPT;
 		else
@@ -597,7 +654,7 @@ LVDSPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 
 	// DPLL mode LVDS for i915+
 	if (gInfo->shared_info->device_type.Generation() >= 3)
-		extraPLLFlags |= DISPLAY_PLL_MODE_LVDS;
+		extraPLLFlags |= DISPLAY_PLL_MODE_LVDS | DISPLAY_PLL_2X_CLOCK;
 
 	// Program general pipe config
 	fPipe->Configure(target);
@@ -727,6 +784,7 @@ DigitalPort::_PortRegister()
 status_t
 DigitalPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 {
+	CALLED();
 	TRACE("%s: %s %dx%d\n", __func__, PortName(), target->virtual_width,
 		target->virtual_height);
 
@@ -735,21 +793,20 @@ DigitalPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 		return B_ERROR;
 	}
 
-#if 0
-	// Disabled for now as our code doesn't work. Let's hope VESA/EFI has
-	// already set things up for us during boot.
-	// Train FDI if it exists
+	// Setup PanelFitter and Train FDI if it exists
+	PanelFitter* fitter = fPipe->PFT();
+	if (fitter != NULL)
+		fitter->Enable(*target);
 	FDILink* link = fPipe->FDI();
 	if (link != NULL)
 		link->Train(target);
-#endif
 
 	pll_divisors divisors;
 	compute_pll_divisors(target, &divisors, false);
 
 	uint32 extraPLLFlags = 0;
 	if (gInfo->shared_info->device_type.Generation() >= 3)
-		extraPLLFlags |= DISPLAY_PLL_MODE_NORMAL;
+		extraPLLFlags |= DISPLAY_PLL_MODE_NORMAL | DISPLAY_PLL_2X_CLOCK;
 
 	// Program general pipe config
 	fPipe->Configure(target);
@@ -791,10 +848,18 @@ HDMIPort::IsConnected()
 	if (portRegister == 0)
 		return false;
 
-	bool hasPCH = (gInfo->shared_info->pch_info != INTEL_PCH_NONE);
-	if (!hasPCH && PortIndex() == INTEL_PORT_C) {
-		// there's no detection bit on this port
-	} else if ((read32(portRegister) & DISPLAY_MONITOR_PORT_DETECTED) == 0)
+	//Notes:
+	//- DISPLAY_MONITOR_PORT_DETECTED does only tell you *some* sort of digital display is
+	//  connected to the port *if* you have the AUX channel stuff under power. It does not
+	//  tell you which -type- of digital display is connected.
+	//- Since we rely on the BIOS anyway, let's just use the conclusions it made for us :)
+	//  Beware though: set_display_power_mode() uses this DISPLAY_MONITOR_PORT_ENABLED bit
+	//  for DPMS as well. So we should better buffer our findings here for i.e. possible
+	//  accelerant clones starting up. For DPMS there's currently no problem as this bit
+	//  is only programmed for LVDS, DVI and VGA while we detect presence only for DP and HDMI.
+	//
+	//if ((read32(portRegister) & DISPLAY_MONITOR_PORT_DETECTED) == 0)
+	if ((read32(portRegister) & DISPLAY_MONITOR_PORT_ENABLED) == 0)
 		return false;
 
 	return HasEDID();
@@ -839,6 +904,53 @@ DisplayPort::DisplayPort(port_index index, const char* baseName)
 }
 
 
+pipe_index
+DisplayPort::PipePreference()
+{
+	CALLED();
+	if (gInfo->shared_info->device_type.Generation() <= 4)
+		return INTEL_PIPE_ANY;
+
+	// Notes:
+	// - The BIOSes seen sofar do not use PIPE C by default.
+	// - Looks like BIOS selected Transcoder (A,B,C) is not always same as selected Pipe (A,B,C)
+	//   so these should probably be handled seperately. For now this is OK as we don't touch
+	//   the pipe for DisplayPort, only the transcoder..
+	uint32 TranscoderPort = INTEL_TRANS_DP_PORT_NONE;
+	switch (PortIndex()) {
+		case INTEL_PORT_A:
+			return INTEL_PIPE_ANY;
+		case INTEL_PORT_B:
+			TranscoderPort = INTEL_TRANS_DP_PORT_B;
+			break;
+		case INTEL_PORT_C:
+			TranscoderPort = INTEL_TRANS_DP_PORT_C;
+			break;
+		case INTEL_PORT_D:
+			TranscoderPort = INTEL_TRANS_DP_PORT_D;
+			break;
+		default:
+			return INTEL_PIPE_ANY;
+	}
+
+	for (uint32 Transcoder = 0; Transcoder < 3; Transcoder++) {
+		if ((read32(INTEL_TRANSCODER_A_DP_CTL + (Transcoder << 12)) & INTEL_TRANS_DP_PORT_MASK) ==
+			INTEL_TRANS_DP_PORT(TranscoderPort)) {
+			switch (Transcoder) {
+				case 0:
+					return INTEL_PIPE_A;
+				case 1:
+					return INTEL_PIPE_B;
+				case 2:
+					return INTEL_PIPE_C;
+			}
+		}
+	}
+
+	return INTEL_PIPE_ANY;
+}
+
+
 bool
 DisplayPort::IsConnected()
 {
@@ -850,12 +962,26 @@ DisplayPort::IsConnected()
 	if (portRegister == 0)
 		return false;
 
-	if ((read32(portRegister) & DISPLAY_MONITOR_PORT_DETECTED) == 0) {
+	//Notes:
+	//- DISPLAY_MONITOR_PORT_DETECTED does only tell you *some* sort of digital display is
+	//  connected to the port *if* you have the AUX channel stuff under power. It does not
+	//  tell you which -type- of digital display is connected.
+	//- Since we rely on the BIOS anyway, let's just use the conclusions it made for us :)
+	//  Beware though: set_display_power_mode() uses this DISPLAY_MONITOR_PORT_ENABLED bit
+	//  for DPMS as well. So we should better buffer our findings here for i.e. possible
+	//  accelerant clones starting up. For DPMS there's currently no problem as this bit
+	//  is only programmed for LVDS, DVI and VGA while we detect presence only for DP and HDMI.
+	//
+	//if ((read32(portRegister) & DISPLAY_MONITOR_PORT_DETECTED) == 0) {
+	if ((read32(portRegister) & DISPLAY_MONITOR_PORT_ENABLED) == 0) {
 		TRACE("%s: %s link not detected\n", __func__, PortName());
 		return false;
 	}
 
-	return HasEDID();
+	//since EDID is not correctly implemented yet for this connection type we'll do without it for now
+	//return HasEDID();
+	TRACE("%s: %s link detected\n", __func__, PortName());
+	return true;
 }
 
 
@@ -932,13 +1058,121 @@ DisplayPort::_PortRegister()
 
 
 status_t
+DisplayPort::_SetPortLinkGen4(display_mode* target)
+{
+	// Khz / 10. ( each output octet encoded as 10 bits. 
+	//uint32 linkBandwidth = gInfo->shared_info->fdi_link_frequency * 1000 / 10; //=270000 khz
+	//fixme: always so?
+	uint32 linkBandwidth = 270000; //khz
+	uint32 fPipeOffset = 0;
+	if (fPipe->Index() == INTEL_PIPE_B)
+		fPipeOffset = 0x1000;
+
+	TRACE("%s: DP M1 data before: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_DATA_M + fPipeOffset));
+	TRACE("%s: DP N1 data before: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_DATA_N + fPipeOffset));
+	TRACE("%s: DP M1 link before: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_LINK_M + fPipeOffset));
+	TRACE("%s: DP N1 link before: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_LINK_N + fPipeOffset));
+
+	uint32 bitsPerPixel = 24;	//fixme: always so?
+	uint32 lanes = 4;			//fixme: always so?
+
+	//Setup Data M/N
+	uint64 linkspeed = lanes * linkBandwidth * 8;
+	uint64 ret_n = 1;
+	while(ret_n < linkspeed) {
+		ret_n *= 2;
+	}
+	if (ret_n > 0x800000) {
+		ret_n = 0x800000;
+	}
+	uint64 ret_m = target->timing.pixel_clock * ret_n * bitsPerPixel / linkspeed;
+	while ((ret_n > 0xffffff) || (ret_m > 0xffffff)) {
+		ret_m >>= 1;
+		ret_n >>= 1;
+	}
+	//Set TU size bits (to default, max) before link training so that error detection works
+	write32(INTEL_PIPE_A_DATA_M + fPipeOffset, ret_m | FDI_PIPE_MN_TU_SIZE_MASK);
+	write32(INTEL_PIPE_A_DATA_N + fPipeOffset, ret_n);
+
+	//Setup Link M/N
+	linkspeed = linkBandwidth;
+	ret_n = 1;
+	while(ret_n < linkspeed) {
+		ret_n *= 2;
+	}
+	if (ret_n > 0x800000) {
+		ret_n = 0x800000;
+	}
+	ret_m = target->timing.pixel_clock * ret_n / linkspeed;
+	while ((ret_n > 0xffffff) || (ret_m > 0xffffff)) {
+		ret_m >>= 1;
+		ret_n >>= 1;
+	}
+	write32(INTEL_PIPE_A_LINK_M + fPipeOffset, ret_m);
+	//Writing Link N triggers all four registers to be activated also (on next VBlank)
+	write32(INTEL_PIPE_A_LINK_N + fPipeOffset, ret_n);
+
+	TRACE("%s: DP M1 data after: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_DATA_M + fPipeOffset));
+	TRACE("%s: DP N1 data after: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_DATA_N + fPipeOffset));
+	TRACE("%s: DP M1 link after: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_LINK_M + fPipeOffset));
+	TRACE("%s: DP N1 link after: 0x%" B_PRIx32 "\n", __func__, read32(INTEL_PIPE_A_LINK_N + fPipeOffset));
+
+	return B_OK;
+}
+
+
+status_t
 DisplayPort::SetDisplayMode(display_mode* target, uint32 colorMode)
 {
+	CALLED();
 	TRACE("%s: %s %dx%d\n", __func__, PortName(), target->virtual_width,
 		target->virtual_height);
 
-	ERROR("TODO: DisplayPort\n");
-	return B_ERROR;
+	if (fPipe == NULL) {
+		ERROR("%s: Setting display mode without assigned pipe!\n", __func__);
+		return B_ERROR;
+	}
+
+	status_t result = B_OK;
+	if (gInfo->shared_info->device_type.Generation() <= 4) {
+		fPipe->ConfigureTimings(target);
+		result = _SetPortLinkGen4(target);
+	} else {
+		//fixme: doesn't work yet. For now just scale to native mode.
+#if 0
+		// Setup PanelFitter and Train FDI if it exists
+		PanelFitter* fitter = fPipe->PFT();
+		if (fitter != NULL)
+			fitter->Enable(*target);
+		FDILink* link = fPipe->FDI();
+		if (link != NULL)
+			link->Train(target);
+
+		pll_divisors divisors;
+		compute_pll_divisors(target, &divisors, false);
+
+		uint32 extraPLLFlags = 0;
+		if (gInfo->shared_info->device_type.Generation() >= 3)
+			extraPLLFlags |= DISPLAY_PLL_MODE_NORMAL | DISPLAY_PLL_2X_CLOCK;
+
+		// Program general pipe config
+		fPipe->Configure(target);
+
+		// Program pipe PLL's
+		fPipe->ConfigureClocks(divisors, target->timing.pixel_clock, extraPLLFlags);
+
+		// Program target display mode
+		fPipe->ConfigureTimings(target);
+#endif
+
+		// Keep monitor at native mode and scale image to that
+		fPipe->ConfigureScalePos(target);
+	}
+
+	// Set fCurrentMode to our set display mode
+	memcpy(&fCurrentMode, target, sizeof(display_mode));
+
+	return result;
 }
 
 
@@ -1086,8 +1320,9 @@ DigitalDisplayInterface::IsConnected()
 	TRACE("%s: %s Maximum Lanes: %" B_PRId8 "\n", __func__,
 		PortName(), fMaxLanes);
 
-	HasEDID();
-
+	//since EDID is not correctly implemented yet for this connection type we'll do without it for now
+	//return HasEDID();
+	TRACE("%s: %s link detected\n", __func__, PortName());
 	return true;
 }
 
@@ -1095,6 +1330,7 @@ DigitalDisplayInterface::IsConnected()
 status_t
 DigitalDisplayInterface::SetDisplayMode(display_mode* target, uint32 colorMode)
 {
+	CALLED();
 	TRACE("%s: %s %dx%d\n", __func__, PortName(), target->virtual_width,
 		target->virtual_height);
 
@@ -1103,21 +1339,23 @@ DigitalDisplayInterface::SetDisplayMode(display_mode* target, uint32 colorMode)
 		return B_ERROR;
 	}
 
-#if 0
-	// Disabled for now as our code doesn't work. Let's hope VESA/EFI has
-	// already set things up for us during boot.
-	// Train FDI if it exists
-	FDILink* link = fPipe->FDI();
-	if (link != NULL)
-		link->Train(target);
-#endif
+	// Setup PanelFitter and Train FDI if it exists
+	PanelFitter* fitter = fPipe->PFT();
+	if (fitter != NULL)
+		fitter->Enable(*target);
+	// Skip FDI if we have a CPU connected display
+	if (PortIndex() != INTEL_PORT_A) {
+		FDILink* link = fPipe->FDI();
+		if (link != NULL)
+			link->Train(target);
+	}
 
 	pll_divisors divisors;
 	compute_pll_divisors(target, &divisors, false);
 
 	uint32 extraPLLFlags = 0;
 	if (gInfo->shared_info->device_type.Generation() >= 3)
-		extraPLLFlags |= DISPLAY_PLL_MODE_NORMAL;
+		extraPLLFlags |= DISPLAY_PLL_MODE_NORMAL | DISPLAY_PLL_2X_CLOCK;
 
 	// Program general pipe config
 	fPipe->Configure(target);

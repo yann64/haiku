@@ -54,7 +54,7 @@ Pipe::Pipe(pipe_index pipeIndex)
 	:
 	fHasTranscoder(false),
 	fFDILink(NULL),
-//	fPanelFitter(NULL),
+	fPanelFitter(NULL),
 	fPipeIndex(pipeIndex),
 	fPipeOffset(0),
 	fPlaneOffset(0)
@@ -75,6 +75,8 @@ Pipe::Pipe(pipe_index pipeIndex)
 
 		// Program FDILink if PCH
 		fFDILink = new(std::nothrow) FDILink(pipeIndex);
+		// Program gen5(+) style panelfitter as well
+		fPanelFitter = new(std::nothrow) PanelFitter(pipeIndex);
 	}
 
 	TRACE("Pipe %s. Pipe Base: 0x%" B_PRIxADDR
@@ -101,43 +103,23 @@ Pipe::IsEnabled()
 void
 Pipe::Configure(display_mode* mode)
 {
-#if 0
-	// FIXME the previous values are never masked out from the
-	// register, so we just OR things together and hope to fall on a working
-	// mode. Better do nothing at all for now.
 	uint32 pipeControl = read32(INTEL_DISPLAY_A_PIPE_CONTROL + fPipeOffset);
 
 	// TODO: Haswell+ dithering changes.
-	if (gInfo->shared_info->device_type.Generation() >= 4) {
-		pipeControl |= (INTEL_PIPE_DITHER_EN | INTEL_PIPE_DITHER_TYPE_SP);
-		// FIXME this makes no sense, if only because B_CMAP8, B_RGB24 and
-		// B_RGB32 have the same color precision (8bit per component).
-		// Also because the color mode is a property of the hardware
-		// (depends on which LVDS panel is used, typically), not the video mode.
-		switch (mode->space) {
-			case B_CMAP8:
-			case B_RGB15_LITTLE:
-			case B_RGB16_LITTLE:
-				pipeControl |= INTEL_PIPE_6BPC;
-				break;
-			case B_RGB24_LITTLE:
-				pipeControl |= INTEL_PIPE_8BPC;
-				break;
-			case B_RGB32_LITTLE:
-			default:
-				pipeControl |= INTEL_PIPE_10BPC;
-				break;
-		}
-	}
+	//if (gInfo->shared_info->device_type.Generation() >= 4) {
+	//	pipeControl |= (INTEL_PIPE_DITHER_EN | INTEL_PIPE_DITHER_TYPE_SP);
+
+	//Link bit depth: this should be globally known per FDI link (i.e. laptop panel 3x6, rest 3x8)
+	//currently using BIOS preconfigured setup
+	//pipeControl = (pipeControl & ~INTEL_PIPE_BPC_MASK) | INTEL_PIPE_BPC(INTEL_PIPE_8BPC);
 
 	// TODO: CxSR downclocking?
 
 	// TODO: Interlaced modes
-	pipeControl |= INTEL_PIPE_PROGRESSIVE;
+	pipeControl = (pipeControl & ~(0x7 << 21)) | INTEL_PIPE_PROGRESSIVE;
 
 	write32(INTEL_DISPLAY_A_PIPE_CONTROL + fPipeOffset, pipeControl);
 	read32(INTEL_DISPLAY_A_PIPE_CONTROL + fPipeOffset);
-#endif
 
 	if (gInfo->shared_info->device_type.Generation() >= 6) {
 		// According to SandyBridge modesetting sequence, pipe must be enabled
@@ -187,6 +169,47 @@ Pipe::_ConfigureTranscoder(display_mode* target)
 
 
 void
+Pipe::ConfigureScalePos(display_mode* target)
+{
+	CALLED();
+
+	TRACE("%s: fPipeOffset: 0x%" B_PRIx32"\n", __func__, fPipeOffset);
+
+	if (target == NULL) {
+		ERROR("%s: Invalid display mode!\n", __func__);
+		return;
+	}
+
+	if (gInfo->shared_info->device_type.Generation() < 6) {
+		// FIXME check on which generations this register exists
+		// (it appears it would be available only for cursor planes, not
+		// display planes)
+		// Since we set the plane to be the same size as the display, we can
+		// just show it starting at top-left.
+		write32(INTEL_DISPLAY_A_POS + fPipeOffset, 0);
+	}
+
+	// The only thing that really matters: set the image size and let the
+	// panel fitter or the transcoder worry about the rest
+	write32(INTEL_DISPLAY_A_PIPE_SIZE + fPipeOffset,
+		((uint32)(target->virtual_width - 1) << 16)
+			| ((uint32)target->virtual_height - 1));
+
+	// Set the plane size as well while we're at it (this is independant, we
+	// could have a larger plane and scroll through it).
+	if (gInfo->shared_info->device_type.Generation() <= 4) {
+		// This is "reserved" on G35 and GMA965, but needed on 945 (for which
+		// there is no public documentation), and I assume earlier devices as
+		// well. Note that the height and width are swapped when compared to
+		// the other registers.
+		write32(INTEL_DISPLAY_A_IMAGE_SIZE + fPipeOffset,
+			((uint32)(target->virtual_height - 1) << 16)
+			| ((uint32)target->virtual_width - 1));
+	}
+}
+
+
+void
 Pipe::ConfigureTimings(display_mode* target, bool hardware)
 {
 	CALLED();
@@ -226,32 +249,7 @@ Pipe::ConfigureTimings(display_mode* target, bool hardware)
 			| ((uint32)target->timing.v_sync_start - 1));
 	}
 
-	if (gInfo->shared_info->device_type.Generation() < 6) {
-		// FIXME check on which generations this register exists
-		// (it appears it would be available only for cursor planes, not
-		// display planes)
-		// Since we set the plane to be the same size as the display, we can
-		// just show it starting at top-left.
-		write32(INTEL_DISPLAY_A_POS + fPipeOffset, 0);
-	}
-
-	// The only thing that really matters: set the image size and let the
-	// panel fitter or the transcoder worry about the rest
-	write32(INTEL_DISPLAY_A_PIPE_SIZE + fPipeOffset,
-		((uint32)(target->virtual_width - 1) << 16)
-			| ((uint32)target->virtual_height - 1));
-
-	// Set the plane size as well while we're at it (this is independant, we
-	// could have a larger plane and scroll through it).
-	if (gInfo->shared_info->device_type.Generation() <= 4) {
-		// This is "reserved" on G35 and GMA965, but needed on 945 (for which
-		// there is no public documentation), and I assume earlier devices as
-		// well. Note that the height and width are swapped when compared to
-		// the other registers.
-		write32(INTEL_DISPLAY_A_IMAGE_SIZE + fPipeOffset,
-			((uint32)(target->virtual_height - 1) << 16)
-			| ((uint32)target->virtual_width - 1));
-	}
+	ConfigureScalePos(target);
 
 	if (fHasTranscoder && hardware) {
 		_ConfigureTranscoder(target);
@@ -276,6 +274,10 @@ Pipe::ConfigureClocks(const pll_divisors& divisors, uint32 pixelClock,
 		pllControl = INTEL_DISPLAY_B_PLL;
 		pllMD = INTEL_DISPLAY_B_PLL_MD;
 	}
+
+	// Disable DPLL first
+	write32(pllControl, read32(pllControl) & ~DISPLAY_PLL_ENABLED);
+	spin(150);
 
 	float refFreq = gInfo->shared_info->pll_info.reference_frequency / 1000.0f;
 
@@ -311,6 +313,8 @@ Pipe::ConfigureClocks(const pll_divisors& divisors, uint32 pixelClock,
 				& DISPLAY_PLL_M2_DIVISOR_MASK));
 	}
 
+	//note: bit DISPLAY_PLL_NO_VGA_CONTROL does not exist on IvyBridge and should be left
+	//      zero there. It does not influence it though.
 	uint32 pll = DISPLAY_PLL_ENABLED | DISPLAY_PLL_NO_VGA_CONTROL | extraFlags;
 
 	if (gInfo->shared_info->device_type.Generation() >= 3) {
@@ -353,13 +357,14 @@ Pipe::ConfigureClocks(const pll_divisors& divisors, uint32 pixelClock,
 			pll |= DISPLAY_PLL_POST1_DIVIDE_2;
 	}
 
-	write32(pllControl, pll & ~DISPLAY_PLL_NO_VGA_CONTROL);
-		// FIXME what is this doing? Why put the PLL back under VGA_CONTROL
-		// here?
+	// Configure PLL while -keeping- it disabled
+	//note: on older chipsets DISPLAY_PLL_NO_VGA_CONTROL probably enables the PLL and locks regs;
+	//      on newer chipsets DISPLAY_PLL_ENABLED does this.
+	write32(pllControl, pll & ~DISPLAY_PLL_ENABLED & ~DISPLAY_PLL_NO_VGA_CONTROL);
 	read32(pllControl);
 	spin(150);
 
-	// Configure and enable the PLL
+	// enable pre-configured PLL (locks PLL settings directly blocking changes in this write even)
 	write32(pllControl, pll);
 	read32(pllControl);
 
@@ -371,7 +376,7 @@ Pipe::ConfigureClocks(const pll_divisors& divisors, uint32 pixelClock,
 		// register which routes the PLL output to the transcoder that we need
 		// to configure
 		uint32 pllSel = read32(SNB_DPLL_SEL);
-		TRACE("Old PLL selection: %x\n", pllSel);
+		TRACE("Old PLL selection: 0x%" B_PRIx32 "\n", pllSel);
 		uint32 shift = 0;
 		uint32 pllIndex = 0;
 
@@ -396,11 +401,10 @@ Pipe::ConfigureClocks(const pll_divisors& divisors, uint32 pixelClock,
 		// Set up the new configuration for this transcoder and enable it
 		pllSel |= (8 | pllIndex) << shift;
 
-		TRACE("New PLL selection: %x\n", pllSel);
+		TRACE("New PLL selection: 0x%" B_PRIx32 "\n", pllSel);
 		write32(SNB_DPLL_SEL, pllSel);
 	}
 }
-
 
 void
 Pipe::Enable(bool enable)
@@ -416,12 +420,24 @@ Pipe::Enable(bool enable)
 		write32(pipeReg, read32(pipeReg) | INTEL_PIPE_ENABLED);
 		wait_for_vblank();
 		write32(planeReg, read32(planeReg) | DISPLAY_CONTROL_ENABLED);
+
+		//Enable default display main watermarks
+		if (gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
+			if (fPipeOffset == 0)
+				write32(INTEL_DISPLAY_A_PIPE_WATERMARK, 0x0783818);
+			else
+				write32(INTEL_DISPLAY_B_PIPE_WATERMARK, 0x0783818);
+		}
 	} else {
 		write32(planeReg, read32(planeReg) & ~DISPLAY_CONTROL_ENABLED);
 		wait_for_vblank();
-		write32(pipeReg, read32(pipeReg) & ~INTEL_PIPE_ENABLED);
+		//Sandy+: when link training is to be done re-enable this line but otherwise don't touch!
+		//GMA(Q45): must disable PIPE or DPLL programming fails.
+		if (gInfo->shared_info->device_type.Generation() <= 5) {
+			write32(pipeReg, read32(pipeReg) & ~INTEL_PIPE_ENABLED);
+		}
 	}
 
+	// flush the eventually cached PCI bus writes
 	read32(INTEL_DISPLAY_A_BASE);
-		// flush the eventually cached PCI bus writes
 }

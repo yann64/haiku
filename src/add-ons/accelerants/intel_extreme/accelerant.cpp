@@ -242,19 +242,34 @@ probe_ports()
 		read32(INTEL_DIGITAL_PORT_B), read32(INTEL_DIGITAL_PORT_C));
 	TRACE("lvds: %08" B_PRIx32 "\n", read32(INTEL_DIGITAL_LVDS_PORT));
 
+	TRACE("dp_a: %08" B_PRIx32 "\n", read32(INTEL_DISPLAY_PORT_A));
+	TRACE("dp_b: %08" B_PRIx32 "\n", read32(INTEL_DISPLAY_PORT_B));
+	TRACE("dp_c: %08" B_PRIx32 "\n", read32(INTEL_DISPLAY_PORT_C));
+	TRACE("dp_d: %08" B_PRIx32 "\n", read32(INTEL_DISPLAY_PORT_D));
+	TRACE("tra_dp: %08" B_PRIx32 "\n", read32(INTEL_TRANSCODER_A_DP_CTL));
+	TRACE("trb_dp: %08" B_PRIx32 "\n", read32(INTEL_TRANSCODER_B_DP_CTL));
+	TRACE("trc_dp: %08" B_PRIx32 "\n", read32(INTEL_TRANSCODER_C_DP_CTL));
+
 	bool foundLVDS = false;
+	bool foundDP = false;
+	bool foundDDI = false;
 
 	gInfo->port_count = 0;
-	for (int i = INTEL_PORT_A; i <= INTEL_PORT_D; i++) {
-		TRACE("Probing DisplayPort %d\n", i);
-		Port* displayPort = new(std::nothrow) DisplayPort((port_index)i);
-		if (displayPort == NULL)
-			return B_NO_MEMORY;
 
-		if (displayPort->IsConnected())
-			gInfo->ports[gInfo->port_count++] = displayPort;
-		else
-			delete displayPort;
+	// Display Port
+	if (!gInfo->shared_info->device_type.HasDDI()) {
+		for (int i = INTEL_PORT_A; i <= INTEL_PORT_D; i++) {
+			TRACE("Probing DisplayPort %d\n", i);
+			Port* displayPort = new(std::nothrow) DisplayPort((port_index)i);
+			if (displayPort == NULL)
+				return B_NO_MEMORY;
+
+			if (displayPort->IsConnected()) {
+				foundDP = true;
+				gInfo->ports[gInfo->port_count++] = displayPort;
+			} else
+				delete displayPort;
+		}
 	}
 
 	// Digital Display Interface
@@ -268,9 +283,10 @@ probe_ports()
 			if (ddiPort == NULL)
 				return B_NO_MEMORY;
 
-			if (ddiPort->IsConnected())
+			if (ddiPort->IsConnected()) {
+				foundDDI = true;
 				gInfo->ports[gInfo->port_count++] = ddiPort;
-			else
+			} else
 				delete ddiPort;
 		}
 	}
@@ -292,6 +308,7 @@ probe_ports()
 		TRACE("Probing HDMI %d\n", i);
 		if (has_connected_port((port_index)i, INTEL_PORT_TYPE_ANY)) {
 			// Ensure port not already claimed by something like DDI
+			TRACE("Port already claimed\n");
 			continue;
 		}
 
@@ -318,8 +335,8 @@ probe_ports()
 	} else
 		delete lvdsPort;
 
-	TRACE("Probing DVI\n");
 	if (!has_connected_port(INTEL_PORT_ANY, INTEL_PORT_TYPE_ANY)) {
+		TRACE("Probing DVI\n");
 		// there's neither DisplayPort nor HDMI so far, assume DVI B
 		for (port_index index = INTEL_PORT_B; index <= INTEL_PORT_C;
 				index = (port_index)(index + 1)) {
@@ -353,8 +370,7 @@ probe_ports()
 	if (gInfo->shared_info->pch_info == INTEL_PCH_IBX
 		|| gInfo->shared_info->pch_info == INTEL_PCH_CPT) {
 		TRACE("Activating clocks\n");
-		// XXX: Is LVDS the same as Panel?
-		refclk_activate_ilk(foundLVDS);
+		refclk_activate_ilk(foundLVDS || foundDP || foundDDI);
 	}
 	/*
 	} else if (gInfo->shared_info->pch_info == INTEL_PCH_LPT) {
@@ -386,7 +402,7 @@ assign_pipes()
 	// to limitations in the current driver on current hardware). Assign those
 	// first
 	for (uint32 i = 0; i < gInfo->port_count; i++) {
-		if (gInfo->ports[i] == NULL)
+		if (!gInfo->ports[i]->IsConnected())
 			continue;
 
 		pipe_index preference = gInfo->ports[i]->PipePreference();
@@ -404,7 +420,7 @@ assign_pipes()
 
 	// In a second pass, assign the remaining ports to the remaining pipes
 	for (uint32 i = 0; i < gInfo->port_count; i++) {
-		if (gInfo->ports[i]->IsConnected()) {
+		if (gInfo->ports[i]->IsConnected() && gInfo->ports[i]->GetPipe() == NULL) {
 			while (current < gInfo->pipe_count && assigned[current])
 				current++;
 
@@ -415,6 +431,7 @@ assign_pipes()
 			}
 
 			gInfo->ports[i]->SetPipe(gInfo->pipes[current]);
+			assigned[current] = true;
 		}
 	}
 

@@ -13,7 +13,8 @@ DirectoryIterator::DirectoryIterator(Inode* inode)
 	fShortDir(NULL),
 	fExtentDir(NULL),
 	fLeafDir(NULL),
-	fNodeDir(NULL)
+	fNodeDir(NULL),
+	fTreeDir(NULL)
 {
 }
 
@@ -24,6 +25,7 @@ DirectoryIterator::~DirectoryIterator()
 	delete fLeafDir;
 	delete fExtentDir;
 	delete fNodeDir;
+	delete fTreeDir;
 }
 
 
@@ -32,13 +34,14 @@ DirectoryIterator::Init()
 {
 	if (fInode->Format() == XFS_DINODE_FMT_LOCAL)
 	{
+		TRACE("Iterator:Init: LOCAL");
 		fShortDir = new(std::nothrow) ShortDirectory(fInode);
 		if (fShortDir == NULL)
 			return B_NO_MEMORY;
 		return B_OK;
 	}
 	if (fInode->Format() == XFS_DINODE_FMT_EXTENTS) {
-		// TODO: Only working with Block directories, not leaf.
+		TRACE("Iterator:Init: EXTENTS");
 		fExtentDir = new(std::nothrow) Extent(fInode);
 		if (fExtentDir == NULL)
 			return B_NO_MEMORY;
@@ -74,17 +77,12 @@ DirectoryIterator::Init()
 	/* Return B_OK so even if the shortform directory has an extent directory
 	 * we can atleast still list the shortform directory
 	 */
-
-	//TODO: Reading from extent based directories
-	if (fInode->Format() == XFS_DINODE_FMT_EXTENTS) {
-		TRACE("Iterator:GetNext: EXTENTS");
-		return B_OK;
-	}
-
-	//TODO: Reading from B+Trees based directories
 	if (fInode->Format() == XFS_DINODE_FMT_BTREE) {
-		TRACE("Iterator:GetNext: B+TREE");
-		return B_OK;
+		TRACE("Iterator:Init(): B+TREE");
+		fTreeDir = new(std::nothrow) TreeDirectory(fInode);
+		if (fTreeDir == NULL)
+			return B_NO_MEMORY;
+		return fTreeDir->InitCheck();
 	}
 
 	return B_BAD_VALUE;
@@ -96,11 +94,11 @@ DirectoryIterator::GetNext(char* name, size_t* length, xfs_ino_t* ino)
 {
 	status_t status;
 	if (fInode->Format() == XFS_DINODE_FMT_LOCAL) {
+		TRACE("Iterator:GetNext: LOCAL");
 		status = fShortDir->GetNext(name, length, ino);
 		return status;
 	}
 
-	//TODO: Reading from extent based directories
 	if (fInode->Format() == XFS_DINODE_FMT_EXTENTS) {
 		TRACE("Iterator:GetNext: EXTENTS");
 		if (fExtentDir != NULL)
@@ -112,9 +110,10 @@ DirectoryIterator::GetNext(char* name, size_t* length, xfs_ino_t* ino)
 		return status;
 	}
 
-	//TODO: Reading from B+Trees based directories
 	if (fInode->Format() == XFS_DINODE_FMT_BTREE) {
 		TRACE("Iterator:GetNext: B+TREE");
+		if (fTreeDir != NULL)
+			return status = fTreeDir->GetNext(name, length, ino);
 		return B_NOT_SUPPORTED;
 	}
 
@@ -128,13 +127,14 @@ DirectoryIterator::Lookup(const char* name, size_t length, xfs_ino_t* ino)
 {
 	status_t status;
 	if (fInode->Format() == XFS_DINODE_FMT_LOCAL) {
+		TRACE("Iterator:Lookup: LOCAL\n");
 		status = fShortDir->Lookup(name, length, ino);
 		return status;
 	}
 
 	//TODO: Reading from extent based dirs
 	if (fInode->Format() == XFS_DINODE_FMT_EXTENTS) {
-		TRACE("Iterator:Lookup: EXTENTS");
+		TRACE("Iterator:Lookup: EXTENTS\n");
 		if (fExtentDir != NULL)
 			status = fExtentDir->Lookup(name, length, ino);
 		else if (fLeafDir != NULL)
@@ -146,7 +146,9 @@ DirectoryIterator::Lookup(const char* name, size_t length, xfs_ino_t* ino)
 
 	//TODO: Reading from B+Tree based dirs
 	if (fInode->Format() == XFS_DINODE_FMT_BTREE) {
-		TRACE("Iterator:Lookup: B+TREE");
+		TRACE("Iterator:Lookup: B+TREE\n");
+		if (fTreeDir != NULL)
+			return fTreeDir->Lookup(name, length, ino);
 		return B_NOT_SUPPORTED;
 	}
 

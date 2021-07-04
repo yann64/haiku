@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019, Haiku, Inc. All rights reserved.
+ * Copyright 2011-2021, Haiku, Inc. All rights reserved.
  * Distributed under the terms of the MIT License.
  *
  * Authors:
@@ -8,6 +8,7 @@
  *		Jérôme Duval <jerome.duval@gmail.com>
  *		Akshay Jaggi <akshay1994.leo@gmail.com>
  *		Michael Lotz <mmlr@mlotz.ch>
+ *		Alexander von Gluck <kallisti5@unixzen.com>
  */
 
 
@@ -968,8 +969,13 @@ XHCI::CancelQueuedTransfers(Pipe *pipe, bool force)
 	// complete, one of the queued transfers posts a completion event, so in
 	// order to avoid a deadlock, we must unlock the endpoint.
 	endpointLocker.Unlock();
-	status_t status = StopEndpoint(false, endpoint->id + 1,
-		endpoint->device->slot);
+	status_t status = StopEndpoint(false, endpoint);
+	if (status == B_NOT_ALLOWED) {
+		// XHCI 1.2, 4.8.3 Endpoint State Diagram
+		// Only exit from a HALTED state is a reset
+		TRACE_ERROR("cancel queued transfers: halted endpoint. reset!");
+		status = ResetEndpoint(false, endpoint);
+	}
 	endpointLocker.Lock();
 
 	// Detach the head TD from the endpoint.
@@ -1666,6 +1672,16 @@ XHCI::FreeDevice(Device *device)
 }
 
 
+uint8
+XHCI::_GetEndpointState(xhci_endpoint* endpoint)
+{
+	struct xhci_device_ctx* device_ctx = endpoint->device->device_ctx;
+	return ENDPOINT_0_STATE_GET(
+		_ReadContext(&device_ctx->endpoints[endpoint->id].dwendpoint0));
+
+}
+
+
 status_t
 XHCI::_InsertEndpointForPipe(Pipe *pipe)
 {
@@ -1776,7 +1792,7 @@ XHCI::_RemoveEndpointForPipe(Pipe *pipe)
 	if (endpoint->id > 0) {
 		xhci_device *device = endpoint->device;
 		uint8 epNumber = endpoint->id + 1;
-		StopEndpoint(true, epNumber, device->slot);
+		StopEndpoint(true, endpoint);
 
 		mutex_lock(&endpoint->lock);
 
@@ -2686,14 +2702,25 @@ XHCI::EvaluateContext(uint64 inputContext, uint8 slot)
 
 
 status_t
-XHCI::ResetEndpoint(bool preserve, uint8 endpoint, uint8 slot)
+XHCI::ResetEndpoint(bool preserve, xhci_endpoint* endpoint)
 {
 	TRACE("Reset Endpoint\n");
+
+	switch (_GetEndpointState(endpoint)) {
+		case ENDPOINT_STATE_STOPPED:
+			TRACE("Reset Endpoint: already stopped");
+			return B_OK;
+		case ENDPOINT_STATE_HALTED:
+			TRACE("Reset Endpoint: warning, weird state!");
+		default:
+			break;
+	}
+
 	xhci_trb trb;
 	trb.address = 0;
 	trb.status = 0;
 	trb.flags = TRB_3_TYPE(TRB_TYPE_RESET_ENDPOINT)
-		| TRB_3_SLOT(slot) | TRB_3_ENDPOINT(endpoint);
+		| TRB_3_SLOT(endpoint->device->slot) | TRB_3_ENDPOINT(endpoint->id + 1);
 	if (preserve)
 		trb.flags |= TRB_3_PRSV_BIT;
 
@@ -2702,14 +2729,26 @@ XHCI::ResetEndpoint(bool preserve, uint8 endpoint, uint8 slot)
 
 
 status_t
-XHCI::StopEndpoint(bool suspend, uint8 endpoint, uint8 slot)
+XHCI::StopEndpoint(bool suspend, xhci_endpoint* endpoint)
 {
 	TRACE("Stop Endpoint\n");
+
+	switch (_GetEndpointState(endpoint)) {
+		case ENDPOINT_STATE_HALTED:
+			TRACE("Stop Endpoint: error, halted");
+			return B_NOT_ALLOWED;
+		case ENDPOINT_STATE_STOPPED:
+			TRACE("Stop Endpoint: already stopped");
+			return B_OK;
+		default:
+			break;
+	}
+
 	xhci_trb trb;
 	trb.address = 0;
 	trb.status = 0;
 	trb.flags = TRB_3_TYPE(TRB_TYPE_STOP_ENDPOINT)
-		| TRB_3_SLOT(slot) | TRB_3_ENDPOINT(endpoint);
+		| TRB_3_SLOT(endpoint->device->slot) | TRB_3_ENDPOINT(endpoint->id + 1);
 	if (suspend)
 		trb.flags |= TRB_3_SUSPEND_ENDPOINT_BIT;
 

@@ -265,8 +265,7 @@ arch_thread_enter_userspace(Thread* thread, addr_t entry, void* args1,
 	frame.di = (uint64)args1;
 	frame.ip = entry;
 	frame.cs = USER_CODE_SELECTOR;
-	frame.flags = X86_EFLAGS_RESERVED1 | X86_EFLAGS_INTERRUPT
-		| (3 << X86_EFLAGS_IO_PRIVILEG_LEVEL_SHIFT);
+	frame.flags = X86_EFLAGS_RESERVED1 | X86_EFLAGS_INTERRUPT;
 	frame.sp = stackTop;
 	frame.ss = USER_DATA_SELECTOR;
 
@@ -376,6 +375,7 @@ arch_setup_signal_frame(Thread* thread, struct sigaction* action,
 		+ (addr_t)commPageAddress;
 	clear_ac();
 	frame->di = (addr_t)userSignalFrameData;
+	frame->flags &= ~(uint64)(X86_EFLAGS_TRAP | X86_EFLAGS_DIRECTION);
 
 	return B_OK;
 }

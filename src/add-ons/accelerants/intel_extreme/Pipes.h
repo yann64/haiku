@@ -16,6 +16,7 @@
 
 #include "pll.h"
 #include "FlexibleDisplayInterface.h"
+#include "PanelFitter.h"
 
 
 #define MAX_PIPES	2
@@ -39,6 +40,7 @@ public:
 		void						Disable();
 
 		void						Configure(display_mode* mode);
+		void						ConfigureScalePos(display_mode* mode);
 		void						ConfigureTimings(display_mode* mode,
 										bool hardware = true);
 		void						ConfigureClocks(
@@ -49,8 +51,8 @@ public:
 		// access to the various parts of the pipe
 		::FDILink*					FDI()
 										{ return fFDILink; }
-	//	::PanelFitter*				PanelFitter()
-	//									{ return fPanelFitter; }
+		::PanelFitter*				PFT()
+										{ return fPanelFitter; }
 
 private:
 		void						_ConfigureTranscoder(display_mode* mode);
@@ -58,7 +60,7 @@ private:
 		bool						fHasTranscoder;
 
 		FDILink*					fFDILink;
-	//	PanelFitter*				fPanelFitter;
+		PanelFitter*				fPanelFitter;
 
 		pipe_index					fPipeIndex;
 
